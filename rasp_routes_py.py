@@ -54,11 +54,12 @@ servoMin = 210  				# Min pulse length out of 4096 (~ 10ms)
 servoMax = 400  				# Max pulse length out of 4096 (~ 20ms)
 speed = 0.2						# servo moving speed
 
+
 # Initialise the PWM device using the default address (defined above)
 # Uncomment the line you want, with, or without debugging
-pwm = PWM(board)
-#pwm = PWM(board, debug=True)
 
+#pwm = PWM(board, debug=True)
+pwm = PWM(board)
 pwm.setPWMFreq(freq)			# Set frequency to default (see above)
 
 
@@ -171,7 +172,7 @@ class route:
 
 
 # ------------------------------------------------------------------------
-# lists of various classes
+# lists to hold objects of various classes
 # ------------------------------------------------------------------------
 turnoutList = []
 inputList = []
@@ -206,11 +207,11 @@ def read_config_file():
 				m = re.match("[Tt].*[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)", line)
 				if m:
 					turnoutList.append(turnout(int(m.group(1)), \
-									int(m.group(2)), \
-									int(m.group(3)), \
-									int(m.group(4)), \
-									int(m.group(5)), \
-									m.group(6) ))
+								int(m.group(2)), \
+								int(m.group(3)), \
+								int(m.group(4)), \
+								int(m.group(5)), \
+								m.group(6) ))
 				else:
 					print "Syntax error in Turnout line", lc
 
@@ -251,16 +252,16 @@ def read_config_file():
 			elif (type != "#"):
 				print "Invalid line type in line", lc
 
-								# read next line		
+								# read next line and increment line count
 		line = myfile.readline()
-		lc = lc+1				# increment line count
+		lc = lc+1
 
 	myfile.close()				# close config file
 	return res
 
 
 # ------------------------------------------------------------------------
-# show values from config file
+# report values from config file
 # ------------------------------------------------------------------------
 def report_config_file():
 	print ""
