@@ -80,11 +80,11 @@ In the rasp_routes_py.ini file you will find an example, based on my ***Washtown
 
 ![Washtown Industries](./Washtown_Industries.jpg)
 
-When you have a look in the rasp_routes.ini file, there is a route specified as:
+When you have a look in the rasp_routes_py.ini file, there is a route specified as:
 
-**`route:03:1216:cctt--------`**
+**`route:03:12:16:cctt--------`**
 
-Now suppose we want to set a route from the "Branchline" to "Team track 2 - Departure". We would then activate inputs 12 and 16 (or: GPIO's 16 and 20), activating route ("1216"). This would mean that turnouts 0 and 1 (or: T400 and T401, see the turnout section) have to be set to Closed and that turnouts 2 and 3 (or: T402 and T403) have to be set to Thrown. (picture does not represent the proper turnout names yet).
+Now suppose we want to set a route from the "Branchline" to "Team track 2 - Departure". We would then activate inputs 12 and 16 (or: GPIO's 16 and 20), activating route ("12:16"). This would mean that turnouts 0 and 1 (or: T400 and T401, see the turnout section) have to be set to Closed and that turnouts 2 and 3 (or: T402 and T403) have to be set to Thrown. (picture does not represent the proper turnout names yet).
 
 ## License / availability
 This software is available under the conditions of the GNU General Public License. See the LICENSE file for further details.
