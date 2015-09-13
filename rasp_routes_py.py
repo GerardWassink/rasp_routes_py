@@ -40,8 +40,6 @@ import RPi.GPIO as GPIO
 import time
 import re
 
-								# set up GPIO using BCM numbering
-GPIO.setmode(GPIO.BCM)
 
 
 # ------------------------------------------------------------------------
@@ -57,12 +55,85 @@ speed = 0.2						# servo moving speed
 
 name = "rasp_routes_py program"	# default value for name
 
-# Initialise the PWM device using the default address (defined above)
-# Uncomment the line you want, with, or without debugging
+CLOSED = 0
+THROWN = 1
 
+								# Initialise the PWM device using the 
+								# default address (defined above)
+								# Uncomment the line you want, 
+								# with, or without debugging
 #pwm = PWM(board, debug=True)
 pwm = PWM(board)
-pwm.setPWMFreq(freq)			# Set frequency to default (see above)
+
+
+
+# ------------------------------------------------------------------------
+# class definition for input events
+# ------------------------------------------------------------------------
+class inputEvent:
+	def __init__(self):			# event empty means both inputs are -1
+		self.input1 = -1
+		self.input2 = -1
+
+								# event occurred, input gpio specified
+	def event(self, val):
+		print "I - event for input:", val
+
+								# did we have it already?
+		if self.input1 == val or self.input2 == val:
+			print "I - already got it!"
+		 
+								# input1 still empty? sore it there
+		elif self.input1 == -1:
+			self.input1 = val
+
+								# no, but input2 empty? sore it there
+		elif self.input2 == -1:
+			self.input2 = val
+
+								# two inputs received
+								# input 1 > 2? switch them around
+			if self.input1 > self.input2:
+				t = self.input1
+				self.input1 = self.input2
+				self.input2 = t
+
+			print "I - Triggering event for", self.input1, self.input2
+
+								# look for valid route
+			found = 0
+			for r in routeList:
+				if r.input1 == self.input1 and r.input2 == self.input2:
+
+								# valid route found, set route
+					found = 1
+					r.setRoute()
+					break		# out of for loop
+
+								# valid route not found, clear event
+			if found == 0:
+				print "E - invalid combination of inputs, try again"
+				self.reset()
+
+		else:
+								# event when both full, should not happen
+			print "W - event occurred, both inputs already set. enter inputs again please"
+			self.reset()
+
+
+	def reset(self):
+		self.input1 = -1
+		self.input2 = -1
+	
+	
+	def status(self):
+		print "I - Status of events:"
+		if self.input1 != -1:
+			print "I - input 1 =", self.input1
+		else:
+			print "I - status is blank"
+		if self.input2 != -1:
+			print "I - input 2 =", self.input2
 
 
 # ------------------------------------------------------------------------
@@ -76,26 +147,12 @@ class turnout:
 		self.posclos = x4
 		self.posthro = x5
 		self.name = x6
-								# Below some theoretical entries for future
-								# use, setting individual object attributes
-	def setid(self, who):
-		self.id = who
-	def setboard(self, who):
-		self.board = who
-	def setchannel(self, who):
-		self.channel = who
-	def setname(self, who):
-		self.name = who
-	def setposclos(self, who):
-		self.posclos = who
-	def setposthro(self, who):
-		self.posthro = who
-
+		self.setClosed()
 
 								# Set the pulse-width value for this
 								# turnout, corresponding with it's 
 								# closed position
-	def setclosed(self):
+	def setClosed(self):
 		global board, pwm, freq
 								# When this turnout board differs from
 								# previous, than change working board
@@ -103,14 +160,17 @@ class turnout:
 			board = self.board		# remember used board
 			pwm = PWM(self.board)	# set board to be used
 			pwm.setPWMFreq(freq)	# just to be sure, set frequency
+
 									# do it:
 		pwm.setPWM(self.channel, 0, self.posclos)
+		self.state = CLOSED
+#		time.sleep(0.2)
 	
 	
 								# Set the pulse-width value for this
 								# turnout, corresponding with it's 
 								# thrown position
-	def setthrown(self):
+	def setThrown(self):
 		global board, pwm, freq
 								# When this turnout board differs from
 								# previous, than change working board
@@ -118,9 +178,11 @@ class turnout:
 			board = self.board		# remember used board
 			pwm = PWM(self.board)	# set board to be used
 			pwm.setPWMFreq(freq)	# just to be sure, set frequency
+
 									# do it:
 		pwm.setPWM(self.channel, 0, self.posthro)
-
+		self.state = THROWN
+#		time.sleep(0.2)
 
 
 # ------------------------------------------------------------------------
@@ -132,16 +194,6 @@ class input:
 		self.gpio = x2
 		self.name = x3
 		self.inpval = 0
-
-								# Below some theoretical entries for future
-								# use, setting individual object attributes
-	def setid(self, who):
-		self.id = who
-	def setgpio(self, who):
-		self.gpio = who
-	def setname(self, who):
-		self.name = who
-
 
 								# Setup this object's GPIO as an input line
 								# with pull-up
@@ -164,17 +216,24 @@ class route:
 		self.input1 = x2
 		self.input2 = x3
 		self.settings = x4
-								# Below some theoretical entries for future
-								# use, setting individual object attributes
-	def setid(self, who):
-		self.id = who
-	def input1(self, who):
-		self.input1 = who
-	def input2(self, who):
-		self.input2 = who
-	def setsettings(self, who):
-		self.settings = who
 
+	def setRoute(self):
+		print "setting route from", self.input1, "to", self.input2, "-", self.settings
+		tn = 0
+		for s in self.settings:
+			s = s.upper()
+			if s == 'T':
+				for t in turnoutList:
+					if t.id == tn:
+						if t.state != THROWN: t.setThrown()
+						break
+			elif s == 'C':
+				for t in turnoutList:
+					if t.id == tn:
+						if t.state != CLOSED: t.setClosed()
+						break
+			tn += 1
+			
 
 # ------------------------------------------------------------------------
 # lists to hold objects of various classes
@@ -183,6 +242,7 @@ turnoutList = []
 inputList = []
 routeList = []
 
+inpEvent = inputEvent()
 
 # ------------------------------------------------------------------------
 # read and process the configuration file
@@ -358,9 +418,6 @@ def read_config_file():
 								# turnout list ID's
 	c = 0
 	for t in turnoutList:
-		if t.id != c:
-			print "W - ID specified for turnout '" + t.name + "' not equal to internal ID"
-			warnings += 1
 		if t.posclos < 210:
 			print "I - closed value for turnout '" + t.name + "' less than 210" + \
 				", only proceed if this is intentional"
@@ -374,9 +431,6 @@ def read_config_file():
 								# input list ID's
 	c = 0
 	for i in inputList:
-		if i.id != c:
-			print "W - ID specified for input '" + i.name + "' not equal to internal ID"
-			warnings += 1
 		if i.gpio == 2 or i.gpio == 3:
 			print "E - port 2 or 3 use for input '" + i.name + "' during I2C servo " + \
 					"operation, program will end after check"
@@ -386,9 +440,7 @@ def read_config_file():
 								# route list ID's
 	c = 0
 	for r in routeList:
-		if r.id != c:
-			print "W - ID specified for route '" + r.routeid + "' not equal to internal ID"
-			warnings += 1
+								# no checks yet
 		c += 1
 
 	print ""
@@ -410,7 +462,32 @@ def read_config_file():
 	print "Welcome to " + name
 	print "--------------------------------------------------------------------------------"
 	
+	intitialize_inputs()
+
 	return res
+
+
+# ------------------------------------------------------------------------
+# re-read config file and setup again
+# ------------------------------------------------------------------------
+def refresh_config():
+	global turnoutList
+	global inputList
+	global routeList
+	
+								# before refreshing, remove event triggers
+	for i in inputList:
+		i.setup()
+		GPIO.remove_event_detect(i.gpio)
+
+								# nullify lists 
+	turnoutList = []
+	inputList = []
+	routeList = []
+
+								# re-read config file
+	if (read_config_file()):
+		print "I - Confiugration refrreshed"
 
 
 # ------------------------------------------------------------------------
@@ -447,8 +524,9 @@ def explain():
 	print "rasp_routes_py - valid line commands are:"
 	print ""
 	print "h | help     : gives you this help information"
+	print "f | fresh    : read fresh copy of configuration file"
 	print "l | list     : report about config file contents"
-	print "s | servo    : gives the servo's a spin (testing purposes)"
+	print "s | state    : report about current status of events"
 	print "q | quit     : stops this program"
 	print ""
 	
@@ -459,20 +537,20 @@ def explain():
 # Initialize all input GPIOs as input and set falling edge events for them
 # ------------------------------------------------------------------------
 def intitialize_inputs():
+#	global pwm
+
+								# set up GPIO using BCM numbering
+	GPIO.setmode(GPIO.BCM)
+
+	pwm.setPWMFreq(freq)			# Set frequency to default (see above)
+
+
 	for i in inputList: 
 		i.setup()
 		GPIO.add_event_detect(i.gpio, \
 					GPIO.FALLING, \
-					callback=process_button, \
-					bouncetime=300)
-
-
-# ------------------------------------------------------------------------
-# event that processes pushed buttons (inputs
-# ------------------------------------------------------------------------
-def process_button(but):
-	print "I - button", but, "pressed"
-	return 0
+					callback=inpEvent.event, \
+					bouncetime=500)
 
 
 # ------------------------------------------------------------------------
@@ -480,8 +558,6 @@ def process_button(but):
 # ------------------------------------------------------------------------
 
 if (read_config_file()):
-
-	intitialize_inputs()
 
 	explain()
 	
@@ -493,16 +569,11 @@ if (read_config_file()):
 
 		elif reply == "LIST" or reply == "L":	report_config_file()
 
+		elif reply == "FRESH" or reply == "F":	refresh_config()
+
 		elif reply == "HELP" or reply == "H":	explain()
 
-		elif reply == "SERVO" or reply == "S":	# Test entry
-			for i in range(0, 4):
-				turnoutList[i].setclosed()
-				time.sleep(0.2)
-			
-			for i in range(3, -1, -1):
-				turnoutList[i].setthrown()
-				time.sleep(0.2)
+		elif reply == "STATE" or reply == "S":	inpEvent.status()
 
 		else:
 			print "W - invalid command, type help"
