@@ -500,18 +500,54 @@ def report_config_file():
 		print "I - id=", t.id, "board=", t.board, \
 		"channel=", t.channel, "posclos=", t.posclos, \
 		"posthro=", t.posthro, "name=", t.name
-
 	print ""
 	print "# --- Input list ---"
 	for i in inputList:
 		print "I - id=", i.id, "gpio=", i.gpio, "name=", i.name
-
 	print ""
 	print "# --- Route list ---"
 	for r in routeList:
 		print "I - id=", r.id, "input1=", r.input1, "input2=", r.input2, \
 			"settings=", r.settings
+	print ""
+	return 0
 
+
+# ------------------------------------------------------------------------
+# report values for inputs
+# ------------------------------------------------------------------------
+def report_inputs():
+	print ""
+	print "# --- Input list ---"
+	for i in inputList:
+		print "I - id=", i.id, "gpio=", i.gpio, "name=", i.name
+	print ""
+	return 0
+
+
+# ------------------------------------------------------------------------
+# report values for routes
+# ------------------------------------------------------------------------
+def report_routes():
+	print ""
+	print "# --- Route list ---"
+	for r in routeList:
+		print "I - id=", r.id, "input1=", r.input1, "input2=", r.input2, \
+			"settings=", r.settings
+	print ""
+	return 0
+
+
+# ------------------------------------------------------------------------
+# report values for turnouts
+# ------------------------------------------------------------------------
+def report_turnouts():
+	print ""
+	print "# --- Turnout list ---"
+	for t in turnoutList:
+		print "I - id=", t.id, "board=", t.board, \
+		"channel=", t.channel, "posclos=", t.posclos, \
+		"posthro=", t.posthro, "name=", t.name
 	print ""
 
 	return 0
@@ -526,6 +562,9 @@ def explain():
 	print "h | help     : gives you this help information"
 	print "f | fresh    : read fresh copy of configuration file"
 	print "l | list     : report about config file contents"
+	print "lt           : list turnouts"
+	print "li           : list inputs"
+	print "lr           : list routes"
 	print "s | state    : report about current status of events"
 	print "q | quit     : stops this program"
 	print ""
@@ -568,6 +607,12 @@ if (read_config_file()):
 		if reply == "QUIT" or reply == "Q":		break 
 
 		elif reply == "LIST" or reply == "L":	report_config_file()
+
+		elif reply == "LT":						report_turnouts()
+
+		elif reply == "LI":						report_inputs()
+
+		elif reply == "LR":						report_routes()
 
 		elif reply == "FRESH" or reply == "F":	refresh_config()
 
