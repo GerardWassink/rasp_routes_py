@@ -22,17 +22,17 @@ This line - there's typically only one of these - defines the name of the Layout
 #### Input definition lines
 These define the GPIO lines that must function as inputs. The input lines have the following syntax:
 
-**`input:[id_number]:[gpio_number]:[descriptive_text]`**
+**`input:[gpio_number]:[descriptive_text]`**
 
 #### Turnout definition lines
 These define the addresses that must function as outputs. The output lines have the syntax as described below:
 
-**`turnout:[id_number]:[board]:[channel]:[posclos]:[posthro]:[turnout_name]`**
+**`turnout:[board]:[channel]:[posclos]:[posthro]:[turnout_name]`**
 
 #### Route definition lines
 These define the valid routes in terms of combinations of buttons and desired positions of the turnouts. The route definition lines have the following syntax:
 
-**`route:[id-number]:[route_definition]:[turnout_states]`**
+**`route:[route_definition]:[turnout_states]`**
 
 
 ### Field descriptions
@@ -41,8 +41,6 @@ The various fields are described below.
 **`layout_name`** - This text defines the name of the Layout.
 
 **`name`**, **`input`**, **`turnout`**, **`route`** - These are literals defining the line type. Actually, only their first letters are checked (n, i, t and r). These are case-independant.
-
-**`id_number`** - Is a documentary number that is not actually used within the program. As all types are stored in lists inside the program, starting with zero and numbering up by one, up to the number of lines for input or output you specify. It is therefore convenient and a good habit of using them, starting with '00', counting up by +1 at a time.  These documentary numbers are convenient for the definition of valid routes, see below.
 
 **`gpio_number`** - This is the number of the GPIO port that will be used for input.
 
@@ -62,9 +60,9 @@ All input GPIO's will be inilialized as **`pull_up_down=GPIO.PUD_UP`**, meaning 
 
 **`turnout_name`** - This text describes the names of your turnouts.
 
-**`route_definition`** - A route definition specifies two inputs that define a route as start- and end-point. Routes are specified by two input id_numbers. When for 	example we want a route from inputs 4 and 8, we specify "0408". 	Note that the route from 8 to 4 is identical (duh). Whlie running, the 	program evaluates pushed buttons in numerical order, so when one 	activates inputs 8 and 4 in that order, the program will evaluate that 	against a route identified by "0408".
+**`route_definition`** - A route definition specifies two inputs that define a route as start- and end-point. Routes are specified by two input id_numbers. When for example we want a route from inputs 4 and 8, we specify "0408". Note that the route from 8 to 4 is identical (duh). Whlie running, the program evaluates pushed buttons in numerical order, so when one activates inputs 8 and 4 in that order, the program will evaluate that against a route identified by "0408".
 
-**`turnout_states`** - This field is stored in a table next to the valid routes table. It contains 1 character per turnout, so the length of this field must be equal to the 	number of specified turnouts. 	Values for each character in this field are:
+**`turnout_states`** - This field is stored in a table next to the valid routes table. It contains 1 character per turnout, so the length of this field must be equal to the 	number of specified turnouts. Values for each character in this field are:
 
 * **`t`** :: indicate that when the route is selected, this turnout must be set to thrown, the corresponding output GPIO will be set to HIGH
 
@@ -73,8 +71,12 @@ All input GPIO's will be inilialized as **`pull_up_down=GPIO.PUD_UP`**, meaning 
 * **`-`** :: the hyphen indicaties that this turnout is to be left alone, nothing happens to that GPIO, it is left in the state it had.
 
 
+## Commands
+When the program is running, it presents the user with a prompt: "**`> `**" to indicate it expects a command. type **`h`** or **`help`** to see which command are available.
+
+
 ## Example
-In the rasp_routes.ini file you will find an example, based on my ***Washtown Industries*** yard. It's layout and relevant characteristics are enclosed as file '*Washtown_Industries.jpg*'. 
+In the rasp_routes_py.ini file you will find an example, based on my ***Washtown Industries*** yard. It's layout and relevant characteristics are enclosed as file '*Washtown_Industries.jpg*'. 
 
 ![Washtown Industries](./Washtown_Industries.jpg)
 

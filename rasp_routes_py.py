@@ -48,12 +48,14 @@ GPIO.setmode(GPIO.BCM)
 # Global variables and default values
 # ------------------------------------------------------------------------
 
+								# values concerning servos' and servo HAT
 board = 0x40					# default board value
 freq = 50						# frequency for PWM
 servoMin = 210  				# Min pulse length out of 4096 (~ 10ms)
 servoMax = 400  				# Max pulse length out of 4096 (~ 20ms)
 speed = 0.2						# servo moving speed
 
+name = "rasp_routes_py program"	# default value for name
 
 # Initialise the PWM device using the default address (defined above)
 # Uncomment the line you want, with, or without debugging
@@ -183,12 +185,28 @@ routeList = []
 # read and process the configuration file
 # ------------------------------------------------------------------------
 def read_config_file():
+	global name
 	res = True
 	
+	print "--------------------------------------------------------------------------------"
+	print "Welcom to " + name
+	print "--------------------------------------------------------------------------------"
+	print ""
+	print "Reading and checking configuration file"
+
+	errors = 0
+	warnings = 0
+	informationals = 0
+		
 	myfile = open("rasp_routes_py.ini", "r")
 
 	line = myfile.readline()	# read first line
+	
 	lc = 1						# set line count
+	
+	tid = 0						# set Turnout id count
+	iid = 0						# set Input id count
+	rid = 0						# set Route id count
 
 	while (line != ""):		# read through file
 		line = line.rstrip()	# strip all spaces from right side
@@ -204,40 +222,94 @@ def read_config_file():
 								# break down Turnout line and create new turnout
 								# object in list of turnouts
 			if (type == "T" or type == "t"):
-				m = re.match("[Tt].*[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)", line)
+				m = re.match("[Tt].*[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)", line)
 				if m:
-					turnoutList.append(turnout(int(m.group(1)), \
-								int(m.group(2)), \
-								int(m.group(3)), \
-								int(m.group(4)), \
-								int(m.group(5)), \
-								m.group(6) ))
+					id = str(tid)
+						
+					base = m.group(1)
+					if base == '':
+						print "I - board not specified in Turnout line", lc, \
+							"- default of 64 substituted"
+						base = '64'
+						informationals += 1
+						
+					chan = m.group(2)
+					if chan == '':
+						print "E - channel not specified in Turnout line", lc, \
+							"- default of 0 substituted"
+						chan = '0'
+						informationals += 1
+						
+					posclos = m.group(3)
+					if posclos == '':
+						print "I - posclos not specified in Turnout line", lc, \
+							"- default of 210 substituted"
+						posclos ='210'
+						informationals += 1
+						
+					posthro = m.group(4)
+					if posthro == '':
+						print "I - posthro not specified in Turnout line", lc, \
+							"- default of 400 substituted"
+						posclos ='400'
+						informationals += 1
+						
+					tname = m.group(5)
+					if tname == '':
+						print "I - name not specified in Turnout line", lc, \
+							"- default of T" + id + " substituted"
+						tname = "T" + id
+						informationals += 1
+						
+					turnoutList.append(turnout( \
+								int(id), \
+								int(base), \
+								int(chan), \
+								int(posclos), \
+								int(posthro), \
+								tname ) )
+					tid += 1
 				else:
-					print "Syntax error in Turnout line", lc
+					print "W - Syntax error in Turnout line", lc, \
+							", line not processed"
+					warnings += 1
+
 
 								# Is this an 'input' line?
 								# break down Input line and create new input
 								# object in list of inputs
 			elif (type == "I" or type == "i"):
-				m = re.match("[Ii].*[:](.*)[:](.*)[:](.*)", line)
+				m = re.match("[Ii].*[:](.*)[:](.*)", line)
 				if m:
-					inputList.append(input(int(m.group(1)), \
-								int(m.group(2)), \
-								m.group(3)))
+					id = str(iid)
+
+					inputList.append(input(int(iid), \
+								int(m.group(1)), \
+								m.group(2) ) )
+					iid += 1
 				else:
-					print "Syntax error in Input line", lc
+					print "W - Syntax error in Input line", lc, \
+							", line not processed"
+					warnings += 1
+
 
 								# Is this a 'route' line?
 								# break down Route line and create new route
 								# object in list of routes
 			elif (type == "R" or type == "r"):
-				m = re.match("[Rr].*[:](.*)[:](.*)[:](.*)", line)
+				m = re.match("[Rr].*[:](.*)[:](.*)", line)
 				if m:
-					routeList.append(route(int(m.group(1)), \
-								m.group(2), \
-								m.group(3)))
+					id = str(rid)
+
+					routeList.append(route(int(rid), \
+								m.group(1), \
+								m.group(2) ) )
+					rid += 1
 				else:			# line type not defined
-					print "Syntax error in Route line", lc
+					print "W - Syntax error in Route line", lc, \
+							", line not processed"
+					warnings += 1
+
 
 								# Is this a 'name' line?
 								# break down Name line
@@ -246,17 +318,80 @@ def read_config_file():
 				if m:
 					name = (m.group(1))
 				else:
-					print "Syntax error in Name line", lc
+					print "W - Syntax error in Name line", lc, \
+							", line not processed"
+					warnings += 1
 
 									# Is this NOT a comment line?
 			elif (type != "#"):
-				print "Invalid line type in line", lc
+				print "W - Invalid line type in line", lc
+				warnings += 1
 
 								# read next line and increment line count
 		line = myfile.readline()
 		lc = lc+1
 
 	myfile.close()				# close config file
+	
+	
+								# after reading, check lists for mismatching ID's
+								# and other possible errors
+								
+								# turnout list ID's
+	c = 0
+	for t in turnoutList:
+		if t.id != c:
+			print "W - ID specified for turnout '" + t.name + "' not equal to internal ID"
+			warnings += 1
+		if t.posclos < 210:
+			print "I - closed value for turnout '" + t.name + "' less than 210" + \
+				", only proceed if this is intentional"
+			informationals += 1
+		if t.posthro > 400:
+			print "I - thrown value for turnout '" + t.name + "' greater than 400" + \
+				", only proceed if this is intentional"
+			informationals += 1
+		c += 1
+	
+								# input list ID's
+	c = 0
+	for i in inputList:
+		if i.id != c:
+			print "W - ID specified for input '" + i.name + "' not equal to internal ID"
+			warnings += 1
+		if i.gpio == 2 or i.gpio == 3:
+			print "E - port 2 or 3 use for input '" + i.name + "' during I2C servo " + \
+					"operation, program will end after check"
+			errors += 1
+		c += 1
+	
+								# route list ID's
+	c = 0
+	for r in routeList:
+		if r.id != c:
+			print "W - ID specified for route '" + r.routeid + "' not equal to internal ID"
+			warnings += 1
+		c += 1
+
+	print ""
+	print "I - during config file check:"
+	print "		informationals:", informationals
+	print "		warnings      :", warnings
+	print "		errors        :", errors
+	print ""
+
+	if errors == 0:
+		print "I - No errors found, processing continues"
+		print ""
+	else:
+		print "I - rasp_routes_py stopping due to errors in configuration file"
+		print ""
+		exit(1)
+	
+	print "--------------------------------------------------------------------------------"
+	print "Welcome to " + name
+	print "--------------------------------------------------------------------------------"
+	
 	return res
 
 
@@ -267,52 +402,94 @@ def report_config_file():
 	print ""
 	print "# --- Turnout list ---"
 	for t in turnoutList:
-		print "id=", t.id, "board=", t.board, \
+		print "I - id=", t.id, "board=", t.board, \
 		"channel=", t.channel, "posclos=", t.posclos, \
 		"posthro=", t.posthro, "name=", t.name
 
 	print ""
 	print "# --- Input list ---"
-	for t in inputList:
-		print "id=", t.id, "gpio=", t.gpio, "name=", t.name
+	for i in inputList:
+		print "I - id=", i.id, "gpio=", i.gpio, "name=", i.name
 
 	print ""
 	print "# --- Route list ---"
-	for t in routeList:
-		print "id=", t.id, "routeid=", t.routeid, "settings=", t.settings
+	for r in routeList:
+		print "I - id=", r.id, "routeid=", r.routeid, "settings=", r.settings
 
+	print ""
+
+	return 0
+
+
+# ------------------------------------------------------------------------
+# Give help onscreen
+# ------------------------------------------------------------------------
+def explain():
+	print "rasp_routes_py - valid line commands are:"
+	print ""
+	print "h | help     : gives you this help information"
+	print "l | list     : report about config file contents"
+	print "s | servo    : gives the servo's a spin (testing purposes)"
+	print "q | quit     : stops this program"
+	print ""
+	
+	return 0
+	
+
+# ------------------------------------------------------------------------
+# Initialize all input GPIOs as input and set falling edge events for them
+# ------------------------------------------------------------------------
+def intitialize_inputs():
+	for i in inputList: 
+		i.setup()
+		GPIO.add_event_detect(i.gpio, \
+					GPIO.FALLING, \
+					callback=process_button, \
+					bouncetime=300)
+
+
+# ------------------------------------------------------------------------
+# event that processes pushed buttons (inputs
+# ------------------------------------------------------------------------
+def process_button(but):
+	print "I - button", but, "pressed"
 	return 0
 
 
 # ------------------------------------------------------------------------
 # main line
 # ------------------------------------------------------------------------
+
 if (read_config_file()):
 
-								# Initialize all inputs read
-	for i in inputList: i.setup()
+	intitialize_inputs()
 
-	report_config_file()
+	explain()
+	
+	while True:
+		reply = raw_input("> ") 
+		reply = reply.upper()
 
-	while (1):
-		for i in inputList: i.getval()
-		
-		for i in range(0, 4):
-			turnoutList[i].setclosed()
-			time.sleep(0.2)
+		if reply == "QUIT" or reply == "Q":		break 
+
+		elif reply == "LIST" or reply == "L":	report_config_file()
+
+		elif reply == "HELP" or reply == "H":	explain()
+
+		elif reply == "SERVO" or reply == "S":	# Test entry
+			for i in range(0, 4):
+				turnoutList[i].setclosed()
+				time.sleep(0.2)
 			
-			turnoutList[i].setthrown()
-			time.sleep(0.2)
-		
-		if inputList[19].inpval == 0:
-			print "1 pressed"
-		
-		if inputList[20].inpval == 0:
-			print "2 pressed"
-			break
+			for i in range(3, -1, -1):
+				turnoutList[i].setthrown()
+				time.sleep(0.2)
+
+		else:
+			print "W - invalid command, type help"
 
 	GPIO.cleanup()
-	print "bye now"
+	print "I - bye now"
 
 else:
-	print "Error reading configuration file"
+	print "E - Error reading configuration file"
