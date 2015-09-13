@@ -32,7 +32,7 @@ These define the addresses that must function as outputs. The output lines have 
 #### Route definition lines
 These define the valid routes in terms of combinations of buttons and desired positions of the turnouts. The route definition lines have the following syntax:
 
-**`route:[route_definition]:[turnout_states]`**
+**`route:[input1]:[input2]:[turnout_states]`**
 
 
 ### Field descriptions
@@ -60,7 +60,7 @@ All input GPIO's will be inilialized as **`pull_up_down=GPIO.PUD_UP`**, meaning 
 
 **`turnout_name`** - This text describes the names of your turnouts.
 
-**`route_definition`** - A route definition specifies two inputs that define a route as start- and end-point. Routes are specified by two input id_numbers. When for example we want a route from inputs 4 and 8, we specify "0408". Note that the route from 8 to 4 is identical (duh). Whlie running, the program evaluates pushed buttons in numerical order, so when one activates inputs 8 and 4 in that order, the program will evaluate that against a route identified by "0408".
+**`input1`** **`input2`** - A route is defined by two inputs, one as start- and one as end-point. Routes are specified by two input id_numbers. When for example we want a route from input 4 to input 8, we specify "04:08". Note that the route from 8 to 4 is identical (duh). While running, the program evaluates activated inputs in numerical order, so when one activates inputs 8 and 4 in that order, the program will evaluate that against a route identified by "04:08".
 
 **`turnout_states`** - This field is stored in a table next to the valid routes table. It contains 1 character per turnout, so the length of this field must be equal to the 	number of specified turnouts. Values for each character in this field are:
 

@@ -159,16 +159,19 @@ class input:
 # class definition for route objects
 # ------------------------------------------------------------------------
 class route:
-	def __init__(self, x1, x2, x3):
+	def __init__(self, x1, x2, x3, x4):
 		self.id = x1
-		self.routeid = x2
-		self.settings = x3
+		self.input1 = x2
+		self.input2 = x3
+		self.settings = x4
 								# Below some theoretical entries for future
 								# use, setting individual object attributes
 	def setid(self, who):
 		self.id = who
-	def setrouteid(self, who):
-		self.routeid = who
+	def input1(self, who):
+		self.input1 = who
+	def input2(self, who):
+		self.input2 = who
 	def setsettings(self, who):
 		self.settings = who
 
@@ -225,7 +228,7 @@ def read_config_file():
 				m = re.match("[Tt].*[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)", line)
 				if m:
 					id = str(tid)
-						
+					
 					base = m.group(1)
 					if base == '':
 						print "I - board not specified in Turnout line", lc, \
@@ -297,13 +300,28 @@ def read_config_file():
 								# break down Route line and create new route
 								# object in list of routes
 			elif (type == "R" or type == "r"):
-				m = re.match("[Rr].*[:](.*)[:](.*)", line)
+				m = re.match("[Rr].*[:](.*)[:](.*)[:](.*)", line)
 				if m:
 					id = str(rid)
 
+					inp1 = m.group(1)
+					if inp1 == '':
+						print "I - input1 not specified in Route line", lc, \
+							"- default of 0 substituted"
+						inp1 = '0'
+						informationals += 1
+						
+					inp2 = m.group(2)
+					if inp2 == '':
+						print "I - input2 not specified in Route line", lc, \
+							"- default of 0 substituted"
+						inp2 = '0'
+						informationals += 1
+						
 					routeList.append(route(int(rid), \
-								m.group(1), \
-								m.group(2) ) )
+								int(inp1), \
+								int(inp2), \
+								m.group(3) ) )
 					rid += 1
 				else:			# line type not defined
 					print "W - Syntax error in Route line", lc, \
@@ -414,7 +432,8 @@ def report_config_file():
 	print ""
 	print "# --- Route list ---"
 	for r in routeList:
-		print "I - id=", r.id, "routeid=", r.routeid, "settings=", r.settings
+		print "I - id=", r.id, "input1=", r.input1, "input2=", r.input2, \
+			"settings=", r.settings
 
 	print ""
 
