@@ -1,10 +1,16 @@
 # TODO list (rasp_routes_py program)
 There are a number of things still to be done before this program is ready to be used:
 
+### separate logging into module
+* make logging a separate re-usable library
+
 ### bouncing inputs
 * the input with switches is not reliable
 	* find out cause
 	* make it work
+
+### non standard config file
+* be able to read another config file from command line
 
 ### calibrate servo's
 * build code to be able to calibrate servo's

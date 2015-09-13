@@ -53,8 +53,6 @@ servoMin = 210  				# Min pulse length out of 4096 (~ 10ms)
 servoMax = 400  				# Max pulse length out of 4096 (~ 20ms)
 speed = 0.2						# servo moving speed
 
-name = "rasp_routes_py program"	# default value for name
-
 CLOSED = 0
 THROWN = 1
 
@@ -65,6 +63,51 @@ THROWN = 1
 #pwm = PWM(board, debug=True)
 pwm = PWM(board)
 
+
+
+# ------------------------------------------------------------------------
+# class definition for Layout object
+# ------------------------------------------------------------------------
+class layout:
+	def __init__(self, x1):
+		self.name = x1
+		
+	def setName(self, name):
+		self.name = name
+
+
+# ------------------------------------------------------------------------
+# class definition for logging events
+# ------------------------------------------------------------------------
+class logging:
+	def __init__(self, level):
+		self.errors = 0
+		self.warnings = 0
+		self.informationals = 0
+		self.logLevel = level	# 3 = error,, 2 = warning,
+								# 1 = informational, 0 = none
+
+	def	logError(self, text):
+		if self.logLevel > 2:
+			print "E - " + text
+		self.errors +=1
+		
+	def	logWarning(self, text):
+		if self.logLevel > 1:
+			print "W - " + text
+		self.warnings +=1
+		
+	def	logInformational(self, text):
+		if self.logLevel > 0:
+			print "I - " + text
+		self.informationals +=1
+		
+	def logReport(self):
+		if self.logLevel > 0:
+			print "Logging report:"
+			if self.logLevel > 2: print "	# errors:", self.errors
+			if self.logLevel > 1: print "	# warnings:", self.warnings
+			if self.logLevel > 0: print "	# informationals:", self.informationals
 
 
 # ------------------------------------------------------------------------
@@ -244,6 +287,132 @@ routeList = []
 
 inpEvent = inputEvent()
 
+logger = logging(3)
+
+myLayout = layout("rasp_routes_py")
+
+
+# ------------------------------------------------------------------------
+# parse lines of type Turnout
+# ------------------------------------------------------------------------
+def parseTurnoutLine(line, tid, lc):
+							# break down Turnout line and create new turnout
+							# object in list of turnouts
+	m = re.match("[Tt].*[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)", line)
+	if m:
+		id = str(tid)
+
+		base = m.group(1)
+		if base == '':
+			base = '64'
+			logger.logInformational("board not specified in Turnout line " + str(lc) + \
+				"- default of 64 substituted")
+	
+		chan = m.group(2)
+		if chan == '':
+			chan = '0'
+			logger.logInformational("channel not specified in Turnout line " + str(lc) + \
+				"- default of 0 substituted")
+	
+		posclos = m.group(3)
+		if posclos == '':
+			posclos ='210'
+			logger.logInformational("posclos not specified in Turnout line " + str(lc) + \
+				"- default of 210 substituted")
+	
+		posthro = m.group(4)
+		if posthro == '':
+			posclos ='400'
+			logger.logInformational("posthro not specified in Turnout line " + str(lc) + \
+				"- default of 400 substituted")
+	
+		tname = m.group(5)
+		if tname == '':
+			tname = "T" + id
+			logger.logInformational("name not specified in Turnout line " + str(lc) + \
+				"- default of:" + tname + " substituted")
+	
+		turnoutList.append(turnout( \
+					int(id), \
+					int(base), \
+					int(chan), \
+					int(posclos), \
+					int(posthro), \
+					tname ) )
+		return True
+	else:
+		logger.logWarning("Syntax error in Turnout line " + str(lc) + \
+				", line not processed")
+		return False
+
+
+# ------------------------------------------------------------------------
+# parse lines of type Input
+# ------------------------------------------------------------------------
+def parseInputLine(line, iid, lc):
+								# break down Input line and create new input
+								# object in list of inputs
+	m = re.match("[Ii].*[:](.*)[:](.*)", line)
+	if m:
+		id = str(iid)
+		
+		inputList.append(input(int(iid), \
+					int(m.group(1)), \
+					m.group(2) ) )
+		return 1
+	else:
+		logger.logWarning("Syntax error in Input line " + str(lc) + \
+				", line not processed")
+		return 0
+
+
+# ------------------------------------------------------------------------
+# parse lines of type Route
+# ------------------------------------------------------------------------
+def parseRouteLine(line, rid, lc):
+								# break down Route line and create new route
+								# object in list of routes
+	m = re.match("[Rr].*[:](.*)[:](.*)[:](.*)", line)
+	if m:
+		id = str(rid)
+
+		inp1 = m.group(1)
+		if inp1 == '':
+			inp1 = '0'
+			logger.logInformational("input1 not specified in Route line " + str(lc) + \
+				"- default of 0 substituted")
+	
+		inp2 = m.group(2)
+		if inp2 == '':
+			inp2 = '0'
+			logger.logInformational("input2 not specified in Route line " + str(lc) + \
+				"- default of 0 substituted")
+	
+		routeList.append(route(int(rid), \
+					int(inp1), \
+					int(inp2), \
+					m.group(3) ) )
+		return 1
+	else:			# line type not defined
+		logger.logWarning("Syntax error in Route line " + str(lc) + \
+				", line not processed")
+		return 0
+
+
+# ------------------------------------------------------------------------
+# parse lines of type Name
+# ------------------------------------------------------------------------
+def parseNameLine(line, lc):
+							# break down Name line
+	m = re.match("[Nn].*[:](.*)", line)
+	if m:
+		myLayout.setName((m.group(1)))
+	else:
+		logger.logWarning("Syntax error in Name line " + str(lc) + \
+				", line not processed")
+
+
+
 # ------------------------------------------------------------------------
 # read and process the configuration file
 # ------------------------------------------------------------------------
@@ -252,7 +421,7 @@ def read_config_file():
 	res = True
 	
 	print "--------------------------------------------------------------------------------"
-	print "Welcom to " + name
+	print "Welcom to " + myLayout.name
 	print "--------------------------------------------------------------------------------"
 	print ""
 	print "Reading and checking configuration file"
@@ -261,210 +430,92 @@ def read_config_file():
 	warnings = 0
 	informationals = 0
 		
-	myfile = open("rasp_routes_py.ini", "r")
-
-	line = myfile.readline()	# read first line
-	
 	lc = 1						# set line count
 	
 	tid = 0						# set Turnout id count
 	iid = 0						# set Input id count
 	rid = 0						# set Route id count
 
-	while (line != ""):		# read through file
-		line = line.rstrip()	# strip all spaces from right side
+	with open("rasp_routes_py.ini", "r") as myfile:
 
-		if (len(line) > 0):	# empty line?
+		for line in myfile:		# read next line
+	
+			line = line.rstrip()	# strip all spaces from right side
+
+			if (len(line) > 0):	# empty line?
 
 								# get first character to determine line type
-			m = re.match("(.).*", line)
-			if m:
-				type = (m.group(1))
-		
+				m = re.match("(.).*", line)
+				if m: type = (m.group(1))	# Isolate type of line
+	
 								# Is this a 'turnout' line?
-								# break down Turnout line and create new turnout
-								# object in list of turnouts
-			if (type == "T" or type == "t"):
-				m = re.match("[Tt].*[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)", line)
-				if m:
-					id = str(tid)
-					
-					base = m.group(1)
-					if base == '':
-						print "I - board not specified in Turnout line", lc, \
-							"- default of 64 substituted"
-						base = '64'
-						informationals += 1
-						
-					chan = m.group(2)
-					if chan == '':
-						print "E - channel not specified in Turnout line", lc, \
-							"- default of 0 substituted"
-						chan = '0'
-						informationals += 1
-						
-					posclos = m.group(3)
-					if posclos == '':
-						print "I - posclos not specified in Turnout line", lc, \
-							"- default of 210 substituted"
-						posclos ='210'
-						informationals += 1
-						
-					posthro = m.group(4)
-					if posthro == '':
-						print "I - posthro not specified in Turnout line", lc, \
-							"- default of 400 substituted"
-						posclos ='400'
-						informationals += 1
-						
-					tname = m.group(5)
-					if tname == '':
-						print "I - name not specified in Turnout line", lc, \
-							"- default of T" + id + " substituted"
-						tname = "T" + id
-						informationals += 1
-						
-					turnoutList.append(turnout( \
-								int(id), \
-								int(base), \
-								int(chan), \
-								int(posclos), \
-								int(posthro), \
-								tname ) )
-					tid += 1
-				else:
-					print "W - Syntax error in Turnout line", lc, \
-							", line not processed"
-					warnings += 1
-
+				if (type == "T" or type == "t"):
+					if (parseTurnoutLine(line, tid, lc)): tid += 1
 
 								# Is this an 'input' line?
-								# break down Input line and create new input
-								# object in list of inputs
-			elif (type == "I" or type == "i"):
-				m = re.match("[Ii].*[:](.*)[:](.*)", line)
-				if m:
-					id = str(iid)
-
-					inputList.append(input(int(iid), \
-								int(m.group(1)), \
-								m.group(2) ) )
-					iid += 1
-				else:
-					print "W - Syntax error in Input line", lc, \
-							", line not processed"
-					warnings += 1
-
+				elif (type == "I" or type == "i"):
+					if (parseInputLine(line, iid, lc)): iid += 1
 
 								# Is this a 'route' line?
-								# break down Route line and create new route
-								# object in list of routes
-			elif (type == "R" or type == "r"):
-				m = re.match("[Rr].*[:](.*)[:](.*)[:](.*)", line)
-				if m:
-					id = str(rid)
-
-					inp1 = m.group(1)
-					if inp1 == '':
-						print "I - input1 not specified in Route line", lc, \
-							"- default of 0 substituted"
-						inp1 = '0'
-						informationals += 1
-						
-					inp2 = m.group(2)
-					if inp2 == '':
-						print "I - input2 not specified in Route line", lc, \
-							"- default of 0 substituted"
-						inp2 = '0'
-						informationals += 1
-						
-					routeList.append(route(int(rid), \
-								int(inp1), \
-								int(inp2), \
-								m.group(3) ) )
-					rid += 1
-				else:			# line type not defined
-					print "W - Syntax error in Route line", lc, \
-							", line not processed"
-					warnings += 1
-
+				elif (type == "R" or type == "r"):
+					if (parseRouteLine(line, rid, lc)): rid += 1
 
 								# Is this a 'name' line?
-								# break down Name line
-			elif (type == "N" or type == "n"):
-				m = re.match("[Nn].*[:](.*)", line)
-				if m:
-					name = (m.group(1))
-				else:
-					print "W - Syntax error in Name line", lc, \
-							", line not processed"
-					warnings += 1
+				elif (type == "N" or type == "n"):
+					parseNameLine(line, lc)
 
-									# Is this NOT a comment line?
-			elif (type != "#"):
-				print "W - Invalid line type in line", lc
-				warnings += 1
+								# Is this NOT a comment line?
+				elif (type != "#"):
+					logger.logWarning("Invalid line type in line" + str(lc))
 
-								# read next line and increment line count
-		line = myfile.readline()
-		lc = lc+1
+								# increment line count
+			lc = lc+1
 
-	myfile.close()				# close config file
-	
-	
-								# after reading, check lists for mismatching ID's
-								# and other possible errors
-								
-								# turnout list ID's
-	c = 0
-	for t in turnoutList:
-		if t.posclos < 210:
-			print "I - closed value for turnout '" + t.name + "' less than 210" + \
-				", only proceed if this is intentional"
-			informationals += 1
-		if t.posthro > 400:
-			print "I - thrown value for turnout '" + t.name + "' greater than 400" + \
-				", only proceed if this is intentional"
-			informationals += 1
-		c += 1
-	
-								# input list ID's
-	c = 0
-	for i in inputList:
-		if i.gpio == 2 or i.gpio == 3:
-			print "E - port 2 or 3 use for input '" + i.name + "' during I2C servo " + \
-					"operation, program will end after check"
-			errors += 1
-		c += 1
-	
-								# route list ID's
-	c = 0
-	for r in routeList:
-								# no checks yet
-		c += 1
+	checkConfigLists()			# check for errors after building lists
 
-	print ""
-	print "I - during config file check:"
-	print "		informationals:", informationals
-	print "		warnings      :", warnings
-	print "		errors        :", errors
-	print ""
+	logger.logReport()			# report # messages per type
 
-	if errors == 0:
-		print "I - No errors found, processing continues"
-		print ""
+	if logger.errors == 0:
+		logger.logInformational("No errors found, processing continues")
 	else:
-		print "I - rasp_routes_py stopping due to errors in configuration file"
-		print ""
+		logger.logError("rasp_routes_py stopping due to errors " + \
+			"in configuration file")
 		exit(1)
 	
 	print "--------------------------------------------------------------------------------"
-	print "Welcome to " + name
+	print "Welcome to " + myLayout.name
 	print "--------------------------------------------------------------------------------"
 	
 	intitialize_inputs()
 
 	return res
+
+
+# ------------------------------------------------------------------------
+# check lists after reading config file
+# ------------------------------------------------------------------------
+def checkConfigLists():
+								# after reading, check lists for mismatching ID's
+								# and other possible errors
+								
+								# turnout list ID's
+	for t in turnoutList:
+		if t.posclos < 210:
+			logger.logInformational("closed value for turnout '" + t.name + \
+				"' less than 210, only proceed if this is intentional")
+		if t.posthro > 400:
+			logger.logInformational("thrown value for turnout '" + t.name + \
+				"' greater than 400, only proceed if this is intentional")
+	
+								# input list ID's
+	for i in inputList:
+		if i.gpio == 2 or i.gpio == 3:
+			logger.logError("port 2 or 3 use for input '" + i.name + \
+				"' during I2C servo operation, program will end after check")
+	
+								# route list ID's
+#	for r in routeList:
+								# no checks yet
 
 
 # ------------------------------------------------------------------------
@@ -605,19 +656,12 @@ if (read_config_file()):
 		reply = reply.upper()
 
 		if reply == "QUIT" or reply == "Q":		break 
-
 		elif reply == "LIST" or reply == "L":	report_config_file()
-
 		elif reply == "LT":						report_turnouts()
-
 		elif reply == "LI":						report_inputs()
-
 		elif reply == "LR":						report_routes()
-
 		elif reply == "FRESH" or reply == "F":	refresh_config()
-
 		elif reply == "HELP" or reply == "H":	explain()
-
 		elif reply == "STATE" or reply == "S":	inpEvent.status()
 
 		else:
