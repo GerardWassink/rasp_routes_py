@@ -1,11 +1,6 @@
 # TODO list (rasp_routes_py program)
 There are a number of things still to be done before this program is ready to be used:
 
-### bouncing inputs
-* the input with switches is not reliable
-	* find out cause
-	* make it work
-
 ### layout object
 * layout object uitbreiden met
 	* config file
@@ -32,6 +27,13 @@ There are a number of things still to be done before this program is ready to be
 	* until user is satisfied and inputs **`done`**
 
 # DONE list
+
+### bouncing inputs (DONE 2015-09-14)
+* the input with switches is not reliable
+	* find out cause
+	* make it work
+
+	Changed it from falling edge to rising edge detection and built in a check for high input according to a [blog post](https://www.raspberrypi.org/forums/viewtopic.php?t=66936&p=490355) on the RPi forum.
 
 ### handle inputs (DONE 2015-09-13, with improvements needed
 * building code to handle inputs at 'falling-edge' events; handler routine is present as stub, code has to be added: 

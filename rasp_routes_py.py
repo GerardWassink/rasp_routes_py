@@ -117,66 +117,77 @@ class inputEvent:
 	def __init__(self):			# event empty means both inputs are -1
 		self.input1 = -1
 		self.input2 = -1
+		self.lastval = -1
 
 								# event occurred, input gpio specified
 	def event(self, val):
-		print "I - event for input:", val
+		if (GPIO.input(val)):	# run only on button release
+
+								# prevent double handling of same button
+			if val != self.lastval:
+				self.lastval = val
+
+				logger.logInformational("event for input:" + str(val))
 
 								# did we have it already?
-		if self.input1 == val or self.input2 == val:
-			print "I - already got it!"
+				if self.input1 == val or self.input2 == val:
+					logger.logInformational("already got it!")
 		 
 								# input1 still empty? sore it there
-		elif self.input1 == -1:
-			self.input1 = val
+				elif self.input1 == -1:
+					self.input1 = val
 
 								# no, but input2 empty? sore it there
-		elif self.input2 == -1:
-			self.input2 = val
+				elif self.input2 == -1:
+					self.input2 = val
 
 								# two inputs received
 								# input 1 > 2? switch them around
-			if self.input1 > self.input2:
-				t = self.input1
-				self.input1 = self.input2
-				self.input2 = t
+					if self.input1 > self.input2:
+						t = self.input1
+						self.input1 = self.input2
+						self.input2 = t
 
-			print "I - Triggering event for", self.input1, self.input2
+					logger.logInformational("Triggering event for " + str(self.input1) + \
+							" " + str(self.input2))
 
 								# look for valid route
-			found = 0
-			for r in routeList:
-				if r.input1 == self.input1 and r.input2 == self.input2:
+					found = 0
+					for r in routeList:
+						if r.input1 == self.input1 and r.input2 == self.input2:
 
 								# valid route found, set route
-					found = 1
-					r.setRoute()
-					break		# out of for loop
+							found = 1
+							r.setRoute()
+							break		# out of for loop
 
 								# valid route not found, clear event
-			if found == 0:
-				print "E - invalid combination of inputs, try again"
-				self.reset()
+					if found == 0:
+						logger.logWarning("invalid combination of inputs, try again")
 
-		else:
+					self.reset()
+
+				else:
 								# event when both full, should not happen
-			print "W - event occurred, both inputs already set. enter inputs again please"
-			self.reset()
+					logger.logWarning("event occurred, both inputs already set. " + \
+						"Enter inputs again please")
+					self.reset()
 
 
 	def reset(self):
 		self.input1 = -1
 		self.input2 = -1
-	
+		self.lastval = -1
+
 	
 	def status(self):
-		print "I - Status of events:"
+		print "> - Status of events:"
 		if self.input1 != -1:
-			print "I - input 1 =", self.input1
+			print "> - input 1 =", self.input1
 		else:
-			print "I - status is blank"
+			print "> - status is blank"
 		if self.input2 != -1:
-			print "I - input 2 =", self.input2
+			print "> - input 2 =", self.input2
 
 
 # ------------------------------------------------------------------------
@@ -242,6 +253,10 @@ class input:
 								# with pull-up
 	def setup(self):
 		GPIO.setup(self.gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		GPIO.add_event_detect(self.gpio, \
+					GPIO.RISING, \
+					callback=inpEvent.event, \
+					bouncetime=75)
 
 
 								# Read the current value os this object's
@@ -627,20 +642,13 @@ def explain():
 # Initialize all input GPIOs as input and set falling edge events for them
 # ------------------------------------------------------------------------
 def intitialize_inputs():
-#	global pwm
 
-								# set up GPIO using BCM numbering
-	GPIO.setmode(GPIO.BCM)
+	GPIO.setmode(GPIO.BCM)		# set up GPIO using BCM numbering
 
-	pwm.setPWMFreq(freq)			# Set frequency to default (see above)
+	pwm.setPWMFreq(freq)		# Set frequency to default (see above)
 
-
-	for i in inputList: 
+	for i in inputList:			# setup lines as input, set events
 		i.setup()
-		GPIO.add_event_detect(i.gpio, \
-					GPIO.FALLING, \
-					callback=inpEvent.event, \
-					bouncetime=500)
 
 
 # ------------------------------------------------------------------------
