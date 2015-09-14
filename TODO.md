@@ -7,10 +7,7 @@ There are a number of things still to be done before this program is ready to be
 	* turnoutList
 	* inputList
 	* routeList
-	* logging & level
-
-### separate logging into module
-* make logging a separate re-usable library
+	* logging & level ?
 
 ### std logging?
 * logging ombouwen naar standaard Python?
@@ -28,6 +25,11 @@ There are a number of things still to be done before this program is ready to be
 
 # DONE list
 
+### separate logging into module (DONE 2015-09-14
+* make logging a separate re-usable library
+
+	Isolated to file **`gaw_logging.py`** and changed code accordingly.
+
 ### bouncing inputs (DONE 2015-09-14)
 * the input with switches is not reliable
 	* find out cause
@@ -35,12 +37,14 @@ There are a number of things still to be done before this program is ready to be
 
 	Changed it from falling edge to rising edge detection and built in a check for high input according to a [blog post](https://www.raspberrypi.org/forums/viewtopic.php?t=66936&p=490355) on the RPi forum.
 
-### handle inputs (DONE 2015-09-13, with improvements needed
+### handle inputs (DONE 2015-09-13)
 * building code to handle inputs at 'falling-edge' events; handler routine is present as stub, code has to be added: 
 	* wait for two inputs, 
 	* sort them, 
 	* look for presence of route, 
 	* otherwise give error and reset
+
+	Built it in along the lines of [this page](http://sourceforge.net/p/raspberry-gpio-python/wiki/Inputs/). Improvements still needed, button input bounces like crazy.
 
 ### set routes (DONE 2015-09-13)
 * build routine to set routes when a valid route is found

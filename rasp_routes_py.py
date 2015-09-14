@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # ------------------------------------------------------------------------
-# Program		:	rasp_routes.c
+# Program		:	rasp_routes_py.py
 # Author		:	Gerard Wassink
 # Date			:	4 september 2015
 #
@@ -39,7 +39,7 @@ from Adafruit_PWM_Servo_Driver import PWM
 import RPi.GPIO as GPIO
 import time
 import re
-
+import gaw_logging
 
 
 # ------------------------------------------------------------------------
@@ -64,7 +64,6 @@ THROWN = 1
 pwm = PWM(board)
 
 
-
 # ------------------------------------------------------------------------
 # class definition for Layout object
 # ------------------------------------------------------------------------
@@ -74,41 +73,6 @@ class layout:
 		
 	def setName(self, name):
 		self.name = name
-
-
-# ------------------------------------------------------------------------
-# class definition for logging events
-# ------------------------------------------------------------------------
-class logging:
-	def __init__(self, level):
-		self.errors = 0
-		self.warnings = 0
-		self.informationals = 0
-		self.logLevel = level	# 3 = error,, 2 = warning,
-								# 1 = informational, 0 = none
-
-	def	logError(self, text):
-		if self.logLevel > 2:
-			print "E - " + text
-		self.errors +=1
-		
-	def	logWarning(self, text):
-		if self.logLevel > 1:
-			print "W - " + text
-		self.warnings +=1
-		
-	def	logInformational(self, text):
-		if self.logLevel > 0:
-			print "I - " + text
-		self.informationals +=1
-		
-	def logReport(self):
-		if self.logLevel > 0:
-			print "Logging report:"
-			if self.logLevel > 2: print "	# errors:", self.errors
-			if self.logLevel > 1: print "	# warnings:", self.warnings
-			if self.logLevel > 0: print "	# informationals:", self.informationals
-
 
 # ------------------------------------------------------------------------
 # class definition for input events
@@ -248,6 +212,7 @@ class input:
 		self.gpio = x2
 		self.name = x3
 		self.inpval = 0
+		self.setup()
 
 								# Setup this object's GPIO as an input line
 								# with pull-up
@@ -258,6 +223,9 @@ class input:
 					callback=inpEvent.event, \
 					bouncetime=75)
 
+								# remove event from this gpio
+	def removeEvent(self):
+		GPIO.remove_event_detect(self.gpio)
 
 								# Read the current value os this object's
 								# GPIO line
@@ -302,7 +270,7 @@ routeList = []
 
 inpEvent = inputEvent()
 
-logger = logging(3)
+logger = gaw_logging.gaw_logging(3)
 
 myLayout = layout("rasp_routes_py")
 
@@ -434,7 +402,12 @@ def parseNameLine(line, lc):
 def read_config_file():
 	global name
 	res = True
-	
+
+								# Initialize all input GPIOs as input and 
+								# set falling edge events for them
+	GPIO.setmode(GPIO.BCM)		# set up GPIO using BCM numbering
+	pwm.setPWMFreq(freq)		# Set frequency to default (see above)
+
 	print "--------------------------------------------------------------------------------"
 	print "Welcom to " + myLayout.name
 	print "--------------------------------------------------------------------------------"
@@ -500,8 +473,6 @@ def read_config_file():
 	print "--------------------------------------------------------------------------------"
 	print "Welcome to " + myLayout.name
 	print "--------------------------------------------------------------------------------"
-	
-	intitialize_inputs()
 
 	return res
 
@@ -543,8 +514,7 @@ def refresh_config():
 	
 								# before refreshing, remove event triggers
 	for i in inputList:
-		i.setup()
-		GPIO.remove_event_detect(i.gpio)
+		i.removeEvent()
 
 								# nullify lists 
 	turnoutList = []
@@ -553,7 +523,7 @@ def refresh_config():
 
 								# re-read config file
 	if (read_config_file()):
-		print "I - Confiugration refrreshed"
+		print "I - Confiugration refreshed"
 
 
 # ------------------------------------------------------------------------
@@ -637,19 +607,6 @@ def explain():
 	
 	return 0
 	
-
-# ------------------------------------------------------------------------
-# Initialize all input GPIOs as input and set falling edge events for them
-# ------------------------------------------------------------------------
-def intitialize_inputs():
-
-	GPIO.setmode(GPIO.BCM)		# set up GPIO using BCM numbering
-
-	pwm.setPWMFreq(freq)		# Set frequency to default (see above)
-
-	for i in inputList:			# setup lines as input, set events
-		i.setup()
-
 
 # ------------------------------------------------------------------------
 # main line
