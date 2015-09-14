@@ -39,7 +39,12 @@ from Adafruit_PWM_Servo_Driver import PWM
 import RPi.GPIO as GPIO
 import time
 import re
-import gaw_logging
+import logging
+
+								# set logging level and format
+logging.basicConfig(level=logging.DEBUG, \
+			format='%(asctime)s: %(levelname)s: %(message)s', \
+			datefmt='%Y-%m-%d,%I:%M:%S')
 
 
 # ------------------------------------------------------------------------
@@ -91,11 +96,11 @@ class inputEvent:
 			if val != self.lastval:
 				self.lastval = val
 
-				logger.logInformational("event for input:" + str(val))
+				logging.info("event for input:" + str(val))
 
 								# did we have it already?
 				if self.input1 == val or self.input2 == val:
-					logger.logInformational("already got it!")
+					logging.info("already got it!")
 		 
 								# input1 still empty? sore it there
 				elif self.input1 == -1:
@@ -112,7 +117,7 @@ class inputEvent:
 						self.input1 = self.input2
 						self.input2 = t
 
-					logger.logInformational("Triggering event for " + str(self.input1) + \
+					logging.info("Triggering event for " + str(self.input1) + \
 							" " + str(self.input2))
 
 								# look for valid route
@@ -127,13 +132,13 @@ class inputEvent:
 
 								# valid route not found, clear event
 					if found == 0:
-						logger.logWarning("invalid combination of inputs, try again")
+						logging.warning("invalid combination of inputs, try again")
 
 					self.reset()
 
 				else:
 								# event when both full, should not happen
-					logger.logWarning("event occurred, both inputs already set. " + \
+					logging.warning("event occurred, both inputs already set. " + \
 						"Enter inputs again please")
 					self.reset()
 
@@ -270,8 +275,6 @@ routeList = []
 
 inpEvent = inputEvent()
 
-logger = gaw_logging.gaw_logging(3)
-
 myLayout = layout("rasp_routes_py")
 
 
@@ -288,31 +291,31 @@ def parseTurnoutLine(line, tid, lc):
 		base = m.group(1)
 		if base == '':
 			base = '64'
-			logger.logInformational("board not specified in Turnout line " + str(lc) + \
+			logging.info("board not specified in Turnout line " + str(lc) + \
 				"- default of 64 substituted")
 	
 		chan = m.group(2)
 		if chan == '':
 			chan = '0'
-			logger.logInformational("channel not specified in Turnout line " + str(lc) + \
+			logging.info("channel not specified in Turnout line " + str(lc) + \
 				"- default of 0 substituted")
 	
 		posclos = m.group(3)
 		if posclos == '':
 			posclos ='210'
-			logger.logInformational("posclos not specified in Turnout line " + str(lc) + \
+			logging.info("posclos not specified in Turnout line " + str(lc) + \
 				"- default of 210 substituted")
 	
 		posthro = m.group(4)
 		if posthro == '':
 			posclos ='400'
-			logger.logInformational("posthro not specified in Turnout line " + str(lc) + \
+			logging.info("posthro not specified in Turnout line " + str(lc) + \
 				"- default of 400 substituted")
 	
 		tname = m.group(5)
 		if tname == '':
 			tname = "T" + id
-			logger.logInformational("name not specified in Turnout line " + str(lc) + \
+			logging.info("name not specified in Turnout line " + str(lc) + \
 				"- default of:" + tname + " substituted")
 	
 		turnoutList.append(turnout( \
@@ -324,7 +327,7 @@ def parseTurnoutLine(line, tid, lc):
 					tname ) )
 		return True
 	else:
-		logger.logWarning("Syntax error in Turnout line " + str(lc) + \
+		logging.warning("Syntax error in Turnout line " + str(lc) + \
 				", line not processed")
 		return False
 
@@ -344,7 +347,7 @@ def parseInputLine(line, iid, lc):
 					m.group(2) ) )
 		return 1
 	else:
-		logger.logWarning("Syntax error in Input line " + str(lc) + \
+		logging.warning("Syntax error in Input line " + str(lc) + \
 				", line not processed")
 		return 0
 
@@ -362,13 +365,13 @@ def parseRouteLine(line, rid, lc):
 		inp1 = m.group(1)
 		if inp1 == '':
 			inp1 = '0'
-			logger.logInformational("input1 not specified in Route line " + str(lc) + \
+			logging.info("input1 not specified in Route line " + str(lc) + \
 				"- default of 0 substituted")
 	
 		inp2 = m.group(2)
 		if inp2 == '':
 			inp2 = '0'
-			logger.logInformational("input2 not specified in Route line " + str(lc) + \
+			logging.info("input2 not specified in Route line " + str(lc) + \
 				"- default of 0 substituted")
 	
 		routeList.append(route(int(rid), \
@@ -377,7 +380,7 @@ def parseRouteLine(line, rid, lc):
 					m.group(3) ) )
 		return 1
 	else:			# line type not defined
-		logger.logWarning("Syntax error in Route line " + str(lc) + \
+		logging.warning("Syntax error in Route line " + str(lc) + \
 				", line not processed")
 		return 0
 
@@ -391,7 +394,7 @@ def parseNameLine(line, lc):
 	if m:
 		myLayout.setName((m.group(1)))
 	else:
-		logger.logWarning("Syntax error in Name line " + str(lc) + \
+		logging.warning("Syntax error in Name line " + str(lc) + \
 				", line not processed")
 
 
@@ -454,22 +457,13 @@ def read_config_file():
 
 								# Is this NOT a comment line?
 				elif (type != "#"):
-					logger.logWarning("Invalid line type in line" + str(lc))
+					logging.warning("Invalid line type in line" + str(lc))
 
 								# increment line count
 			lc = lc+1
 
 	checkConfigLists()			# check for errors after building lists
 
-	logger.logReport()			# report # messages per type
-
-	if logger.errors == 0:
-		logger.logInformational("No errors found, processing continues")
-	else:
-		logger.logError("rasp_routes_py stopping due to errors " + \
-			"in configuration file")
-		exit(1)
-	
 	print "--------------------------------------------------------------------------------"
 	print "Welcome to " + myLayout.name
 	print "--------------------------------------------------------------------------------"
@@ -487,17 +481,18 @@ def checkConfigLists():
 								# turnout list ID's
 	for t in turnoutList:
 		if t.posclos < 210:
-			logger.logInformational("closed value for turnout '" + t.name + \
+			logging.info("closed value for turnout '" + t.name + \
 				"' less than 210, only proceed if this is intentional")
 		if t.posthro > 400:
-			logger.logInformational("thrown value for turnout '" + t.name + \
+			logging.info("thrown value for turnout '" + t.name + \
 				"' greater than 400, only proceed if this is intentional")
 	
 								# input list ID's
 	for i in inputList:
 		if i.gpio == 2 or i.gpio == 3:
-			logger.logError("port 2 or 3 use for input '" + i.name + \
-				"' during I2C servo operation, program will end after check")
+			logging.error("port 2 or 3 use for input '" + i.name + \
+				"' during I2C servo operation, program will end")
+			exit(1)
 	
 								# route list ID's
 #	for r in routeList:
@@ -523,29 +518,16 @@ def refresh_config():
 
 								# re-read config file
 	if (read_config_file()):
-		print "I - Confiugration refreshed"
+		logging.info("Confiugration refreshed on user request")
 
 
 # ------------------------------------------------------------------------
 # report values from config file
 # ------------------------------------------------------------------------
 def report_config_file():
-	print ""
-	print "# --- Turnout list ---"
-	for t in turnoutList:
-		print "I - id=", t.id, "board=", t.board, \
-		"channel=", t.channel, "posclos=", t.posclos, \
-		"posthro=", t.posthro, "name=", t.name
-	print ""
-	print "# --- Input list ---"
-	for i in inputList:
-		print "I - id=", i.id, "gpio=", i.gpio, "name=", i.name
-	print ""
-	print "# --- Route list ---"
-	for r in routeList:
-		print "I - id=", r.id, "input1=", r.input1, "input2=", r.input2, \
-			"settings=", r.settings
-	print ""
+	report_turnouts()
+	report_inputs()
+	report_routes()
 	return 0
 
 
@@ -556,7 +538,7 @@ def report_inputs():
 	print ""
 	print "# --- Input list ---"
 	for i in inputList:
-		print "I - id=", i.id, "gpio=", i.gpio, "name=", i.name
+		print "id=", i.id, "gpio=", i.gpio, "name=", i.name
 	print ""
 	return 0
 
@@ -568,7 +550,7 @@ def report_routes():
 	print ""
 	print "# --- Route list ---"
 	for r in routeList:
-		print "I - id=", r.id, "input1=", r.input1, "input2=", r.input2, \
+		print "id=", r.id, "input1=", r.input1, "input2=", r.input2, \
 			"settings=", r.settings
 	print ""
 	return 0
@@ -581,7 +563,7 @@ def report_turnouts():
 	print ""
 	print "# --- Turnout list ---"
 	for t in turnoutList:
-		print "I - id=", t.id, "board=", t.board, \
+		print "id=", t.id, "board=", t.board, \
 		"channel=", t.channel, "posclos=", t.posclos, \
 		"posthro=", t.posthro, "name=", t.name
 	print ""
@@ -630,10 +612,13 @@ if (read_config_file()):
 		elif reply == "STATE" or reply == "S":	inpEvent.status()
 
 		else:
-			print "W - invalid command, type help"
+			logging.warning("invalid command, type help")
 
 	GPIO.cleanup()
-	print "I - bye now"
+	logging.info("user ended session")
+	exit(0)
 
 else:
-	print "E - Error reading configuration file"
+	logging.error("Error reading configuration file")
+	exit(1)
+	

@@ -9,9 +9,6 @@ There are a number of things still to be done before this program is ready to be
 	* routeList
 	* logging & level ?
 
-### std logging?
-* logging ombouwen naar standaard Python?
-
 ### non standard config file
 * be able to read another config file from command line
 
@@ -24,6 +21,11 @@ There are a number of things still to be done before this program is ready to be
 	* until user is satisfied and inputs **`done`**
 
 # DONE list
+
+### std logging (DONE 2015-09-14)
+* logging ombouwen naar standaard Python?
+
+	Built in standard python logging using info from [this web-page](https://docs.python.org/2/howto/logging.html#a-simple-example).
 
 ### separate logging into module (DONE 2015-09-14
 * make logging a separate re-usable library
