@@ -38,13 +38,77 @@
 from Adafruit_PWM_Servo_Driver import PWM
 import RPi.GPIO as GPIO
 import gawServoHandler
+import gawLayout
 import time
 import re
 import logging
 
 
+
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# Candidate for extraction to library.
+# will not work at this time because it refers to "myServoHandler", an
+# instance that is not known when in separate file.
+# ------------------------------------------------------------------------
+# ------------------------------------------------------------------------
+# Program		:	gawLayout.py
+# Author		:	Gerard Wassink
+# Date			:	15 september 2015
+#
+# Function		:	Handle model railroad layout stuff
+#
+# offers:
+#		setName(name)
+#		clearLayout(name)
+#		addTurnout(is, board, channel, posclos, posthro, name)
+#		addRoute(id, input1, input2, settings)
+#		closeTurnout(id)
+#		throwTurnout(id)
+#		setRoute(id)
+#
+# Prerequisites	:
+#		gawServoHandler
+#		logging
+#
+# ------------------------------------------------------------------------
+# 						GNU LICENSE CONDITIONS
+# ------------------------------------------------------------------------
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# ------------------------------------------------------------------------
+# Usage of this library is at the user's own risk, author will not be held
+# responsible for any damage to your hardware. Especially the positioning
+# of servo's has to be done with the greatest possible care.
+#
+# ------------------------------------------------------------------------
+#				Copyright (C) 2015 Gerard Wassink
+# ------------------------------------------------------------------------
+
 # ------------------------------------------------------------------------
 # class definition for Layout object
+# 
+# offers:
+#		setName(name)
+#		clearLayout(name)
+#		addTurnout(is, board, channel, posclos, posthro, name)
+#		addRoute(id, input1, input2, settings)
+#		closeTurnout(id)
+#		throwTurnout(id)
+#		setRoute(id)
+#
 # ------------------------------------------------------------------------
 class layout:
 	def __init__(self, name):
@@ -171,6 +235,9 @@ class route:
 		self.input1 = input1
 		self.input2 = input2
 		self.settings = settings
+
+
+
 
 
 # ------------------------------------------------------------------------
@@ -618,7 +685,7 @@ logging.basicConfig(level=logging.DEBUG, \
 # define some objects we need
 # ------------------------------------------------------------------------
 
-myLayout = layout("rasp_routes_py")				# functionality
+myLayout = gawLayout.layout("rasp_routes_py")	# functionality
 
 myServoHandler = gawServoHandler.servoHandler()	# output
 				
