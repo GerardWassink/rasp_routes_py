@@ -56,8 +56,14 @@ import logging
 class servoHandler:
 	def __init__(self):
 		self.boardStack = servoBoardStack()
-
-
+	
+	
+	def clearServoHandler(self):
+		for b in self.boardStack.boardList:
+			b.servoList = []
+		self.boardStack.boardList = []
+	
+	
 	def addBoard(self, address=0x40, freq=50):
 		found = 0
 								# Try to find board

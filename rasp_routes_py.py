@@ -37,47 +37,190 @@
 
 from Adafruit_PWM_Servo_Driver import PWM
 import RPi.GPIO as GPIO
+import gawServoHandler
 import time
 import re
 import logging
-
-								# set logging level and format
-logging.basicConfig(level=logging.DEBUG, \
-			format='%(asctime)s: %(levelname)s: %(message)s', \
-			datefmt='%Y-%m-%d,%I:%M:%S')
-
-
-# ------------------------------------------------------------------------
-# Global variables and default values
-# ------------------------------------------------------------------------
-
-								# values concerning servos' and servo HAT
-board = 0x40					# default board value
-freq = 50						# frequency for PWM
-servoMin = 210  				# Min pulse length out of 4096 (~ 10ms)
-servoMax = 400  				# Max pulse length out of 4096 (~ 20ms)
-speed = 0.2						# servo moving speed
-
-CLOSED = 0
-THROWN = 1
-
-								# Initialise the PWM device using the 
-								# default address (defined above)
-								# Uncomment the line you want, 
-								# with, or without debugging
-#pwm = PWM(board, debug=True)
-pwm = PWM(board)
 
 
 # ------------------------------------------------------------------------
 # class definition for Layout object
 # ------------------------------------------------------------------------
 class layout:
-	def __init__(self, x1):
-		self.name = x1
+	def __init__(self, name):
+		self.name = name
+		self.turnoutList = []
+		self.routeList = []
+
 		
 	def setName(self, name):
 		self.name = name
+	
+	
+	def clearLayout(self, name):
+		self.name = name
+		self.turnoutList = []
+		self.routeList = []
+
+
+	def addTurnout(self, id, board, channel, posclos, posthro, name):
+		found = 0				# Try to find turnout
+		for t in self.turnoutList:
+			if t.id == id:
+				found = 1
+				break
+		if found == 0:			# only add once
+			t = turnout(id, board, channel, posclos, posthro, name)
+			self.turnoutList.append(t)
+		else:
+			logging.error("trying to add duplicate turnout, id=" + str(id))
+
+
+	def addRoute(self, id, input1, input2, settings):
+		found = 0				# Try to find route
+		for r in self.routeList:
+			if r.id == id:
+				found = 1
+				break
+		if found == 0:			# only add once
+			self.routeList.append(route(id, \
+						input1, \
+						input2, \
+						settings ) )
+		else:
+			logging.error("trying to add duplicate route, id=" + str(id))
+
+
+	def closeTurnout(self, id):
+		found = 0				# Try to find turnout
+		for t in self.turnoutList:
+			if t.id == id:
+				found = 1
+				break
+		if found == 1:			# only add once
+			t.setClosed()
+		else:
+			logging.error("trying to close unknown turnout, id=" + str(id))
+
+
+	def throwTurnout(self, id):
+		found = 0				# Try to find turnout
+		for t in self.turnoutList:
+			if t.id == id:
+				found = 1
+				break
+		if found == 1:			# only add once
+			t.setThrown()
+		else:
+			logging.error("trying to throw unknown turnout, id=" + str(id))
+
+
+	def setRoute(self, id):
+		logging.info("setting route from" + str(self.input1) + \
+							 "to" + str(self.input2) + "-" + self.settings)
+		for r in self.routeList:
+			if r.id == id:
+				tn = 0		# Walk through settings
+				for s in r.settings:
+					s = s.upper()
+					for t in self.turnoutList:
+						if t.id == tn:
+							if s == 'T':
+								self.throwTurnout(t.id)
+							elif s == 'C':
+								self.closeTurnout(t.id)
+							break
+					tn += 1
+			
+
+
+# ------------------------------------------------------------------------
+# class definition for turnout objects
+# ------------------------------------------------------------------------
+class turnout:
+	def __init__(self, id, board, channel, posclos, posthro, name):
+		self.id = id
+		self.board = board
+		self.channel = channel
+		self.posclos = posclos
+		self.posthro = posthro
+		self.name = name
+		self.CLOSED = 0
+		self.THROWN = 1
+		self.setClosed()		# Initial position closed
+
+
+								# set servo to turnouts closed position
+	def setClosed(self):
+		myServoHandler.setServo(self.board, self.channel, self.posclos)
+		self.state = self.CLOSED
+	
+	
+								# set servo to turnouts thrown position
+	def setThrown(self):
+		myServoHandler.setServo(self.board, self.channel, self.posthro)
+		self.state = self.THROWN
+
+
+# ------------------------------------------------------------------------
+# class definition for route objects
+# ------------------------------------------------------------------------
+class route:
+	def __init__(self, id, input1, input2, settings):
+		self.id = id
+		self.input1 = input1
+		self.input2 = input2
+		self.settings = settings
+
+
+# ------------------------------------------------------------------------
+# class definition for gpio pins
+# ------------------------------------------------------------------------
+class inputPins:
+	def __init__(self):
+		self.inputList = []
+
+	def cleanup(self):
+		GPIO.cleanup()
+
+	def addPin(self, id, gpio, name):
+		self.inputList.append(input(id, gpio, name) )
+
+	def clearPins(self):
+		for i in self.inputList:
+			i.removeEvent()
+		self.inputList = []
+
+
+# ------------------------------------------------------------------------
+# class definition for input objects
+# ------------------------------------------------------------------------
+class input:
+	def __init__(self, x1, x2, x3):
+		self.id = x1
+		self.gpio = x2
+		self.name = x3
+		self.inpval = 0
+		self.setup()
+
+								# Setup this object's GPIO as an input line
+								# with pull-up
+	def setup(self):
+		GPIO.setup(self.gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		GPIO.add_event_detect(self.gpio, \
+					GPIO.RISING, \
+					callback=inpEvent.event, \
+					bouncetime=75)
+
+								# remove event from this gpio
+	def removeEvent(self):
+		GPIO.remove_event_detect(self.gpio)
+
+								# Read the current value os this object's
+								# GPIO line
+	def getval(self):
+		self.inpval = GPIO.input(self.gpio)
+
 
 # ------------------------------------------------------------------------
 # class definition for input events
@@ -122,12 +265,11 @@ class inputEvent:
 
 								# look for valid route
 					found = 0
-					for r in routeList:
+					for r in myLayout.routeList:
 						if r.input1 == self.input1 and r.input2 == self.input2:
-
 								# valid route found, set route
 							found = 1
-							r.setRoute()
+							myLayout.setRoute(r.id)
 							break		# out of for loop
 
 								# valid route not found, clear event
@@ -160,125 +302,6 @@ class inputEvent:
 
 
 # ------------------------------------------------------------------------
-# class definition for turnout objects
-# ------------------------------------------------------------------------
-class turnout:
-	def __init__(self, x1, x2, x3, x4, x5, x6):
-		self.id = x1
-		self.board = x2
-		self.channel = x3
-		self.posclos = x4
-		self.posthro = x5
-		self.name = x6
-		self.setClosed()
-
-								# Set the pulse-width value for this
-								# turnout, corresponding with it's 
-								# closed position
-	def setClosed(self):
-		global board, pwm, freq
-								# When this turnout board differs from
-								# previous, than change working board
-		if self.board != board:
-			board = self.board		# remember used board
-			pwm = PWM(self.board)	# set board to be used
-			pwm.setPWMFreq(freq)	# just to be sure, set frequency
-
-									# do it:
-		pwm.setPWM(self.channel, 0, self.posclos)
-		self.state = CLOSED
-#		time.sleep(0.2)
-	
-	
-								# Set the pulse-width value for this
-								# turnout, corresponding with it's 
-								# thrown position
-	def setThrown(self):
-		global board, pwm, freq
-								# When this turnout board differs from
-								# previous, than change working board
-		if self.board != board:
-			board = self.board		# remember used board
-			pwm = PWM(self.board)	# set board to be used
-			pwm.setPWMFreq(freq)	# just to be sure, set frequency
-
-									# do it:
-		pwm.setPWM(self.channel, 0, self.posthro)
-		self.state = THROWN
-#		time.sleep(0.2)
-
-
-# ------------------------------------------------------------------------
-# class definition for input objects
-# ------------------------------------------------------------------------
-class input:
-	def __init__(self, x1, x2, x3):
-		self.id = x1
-		self.gpio = x2
-		self.name = x3
-		self.inpval = 0
-		self.setup()
-
-								# Setup this object's GPIO as an input line
-								# with pull-up
-	def setup(self):
-		GPIO.setup(self.gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-		GPIO.add_event_detect(self.gpio, \
-					GPIO.RISING, \
-					callback=inpEvent.event, \
-					bouncetime=75)
-
-								# remove event from this gpio
-	def removeEvent(self):
-		GPIO.remove_event_detect(self.gpio)
-
-								# Read the current value os this object's
-								# GPIO line
-	def getval(self):
-		self.inpval = GPIO.input(self.gpio)
-
-
-# ------------------------------------------------------------------------
-# class definition for route objects
-# ------------------------------------------------------------------------
-class route:
-	def __init__(self, x1, x2, x3, x4):
-		self.id = x1
-		self.input1 = x2
-		self.input2 = x3
-		self.settings = x4
-
-	def setRoute(self):
-		print "setting route from", self.input1, "to", self.input2, "-", self.settings
-		tn = 0
-		for s in self.settings:
-			s = s.upper()
-			if s == 'T':
-				for t in turnoutList:
-					if t.id == tn:
-						if t.state != THROWN: t.setThrown()
-						break
-			elif s == 'C':
-				for t in turnoutList:
-					if t.id == tn:
-						if t.state != CLOSED: t.setClosed()
-						break
-			tn += 1
-			
-
-# ------------------------------------------------------------------------
-# lists to hold objects of various classes
-# ------------------------------------------------------------------------
-turnoutList = []
-inputList = []
-routeList = []
-
-inpEvent = inputEvent()
-
-myLayout = layout("rasp_routes_py")
-
-
-# ------------------------------------------------------------------------
 # parse lines of type Turnout
 # ------------------------------------------------------------------------
 def parseTurnoutLine(line, tid, lc):
@@ -288,9 +311,9 @@ def parseTurnoutLine(line, tid, lc):
 	if m:
 		id = str(tid)
 
-		base = m.group(1)
-		if base == '':
-			base = '64'
+		board = m.group(1)
+		if board == '':
+			board = '64'
 			logging.info("board not specified in Turnout line " + str(lc) + \
 				"- default of 64 substituted")
 	
@@ -318,13 +341,12 @@ def parseTurnoutLine(line, tid, lc):
 			logging.info("name not specified in Turnout line " + str(lc) + \
 				"- default of:" + tname + " substituted")
 	
-		turnoutList.append(turnout( \
-					int(id), \
-					int(base), \
-					int(chan), \
-					int(posclos), \
-					int(posthro), \
-					tname ) )
+		myServoHandler.addBoard(int(board), 50)
+		myServoHandler.addServo(int(board), int(chan))
+
+		myLayout.addTurnout(int(id), int(board), int(chan), \
+									int(posclos), int(posthro), tname)
+
 		return True
 	else:
 		logging.warning("Syntax error in Turnout line " + str(lc) + \
@@ -341,10 +363,7 @@ def parseInputLine(line, iid, lc):
 	m = re.match("[Ii].*[:](.*)[:](.*)", line)
 	if m:
 		id = str(iid)
-		
-		inputList.append(input(int(iid), \
-					int(m.group(1)), \
-					m.group(2) ) )
+		myPins.addPin(int(iid), int(m.group(1)), m.group(2) )
 		return 1
 	else:
 		logging.warning("Syntax error in Input line " + str(lc) + \
@@ -374,14 +393,18 @@ def parseRouteLine(line, rid, lc):
 			logging.info("input2 not specified in Route line " + str(lc) + \
 				"- default of 0 substituted")
 	
-		routeList.append(route(int(rid), \
+		myLayout.addRoute(int(rid), \
 					int(inp1), \
 					int(inp2), \
-					m.group(3) ) )
+					m.group(3) )
+		
 		return 1
+		
 	else:			# line type not defined
+	
 		logging.warning("Syntax error in Route line " + str(lc) + \
 				", line not processed")
+		
 		return 0
 
 
@@ -409,7 +432,6 @@ def read_config_file():
 								# Initialize all input GPIOs as input and 
 								# set falling edge events for them
 	GPIO.setmode(GPIO.BCM)		# set up GPIO using BCM numbering
-	pwm.setPWMFreq(freq)		# Set frequency to default (see above)
 
 	print "--------------------------------------------------------------------------------"
 	print "Welcom to " + myLayout.name
@@ -417,10 +439,6 @@ def read_config_file():
 	print ""
 	print "Reading and checking configuration file"
 
-	errors = 0
-	warnings = 0
-	informationals = 0
-		
 	lc = 1						# set line count
 	
 	tid = 0						# set Turnout id count
@@ -479,16 +497,16 @@ def checkConfigLists():
 								# and other possible errors
 								
 								# turnout list ID's
-	for t in turnoutList:
-		if t.posclos < 210:
-			logging.info("closed value for turnout '" + t.name + \
-				"' less than 210, only proceed if this is intentional")
-		if t.posthro > 400:
-			logging.info("thrown value for turnout '" + t.name + \
-				"' greater than 400, only proceed if this is intentional")
+#	for t in myBoards.servoBoard.turnoutList:
+#		if t.posclos < 210:
+#			logging.info("closed value for turnout '" + t.name + \
+#				"' less than 210, only proceed if this is intentional")
+#		if t.posthro > 400:
+#			logging.info("thrown value for turnout '" + t.name + \
+#				"' greater than 400, only proceed if this is intentional")
 	
 								# input list ID's
-	for i in inputList:
+	for i in myPins.inputList:
 		if i.gpio == 2 or i.gpio == 3:
 			logging.error("port 2 or 3 use for input '" + i.name + \
 				"' during I2C servo operation, program will end")
@@ -503,22 +521,14 @@ def checkConfigLists():
 # re-read config file and setup again
 # ------------------------------------------------------------------------
 def refresh_config():
-	global turnoutList
-	global inputList
-	global routeList
-	
-								# before refreshing, remove event triggers
-	for i in inputList:
-		i.removeEvent()
-
-								# nullify lists 
-	turnoutList = []
-	inputList = []
-	routeList = []
-
+	myPins.clearPins()			# before refreshing, remove event triggers
+								# clear Mylayout
+	myLayout.clearLayout("rasp_routes_py refreshing")
+								# clear board stack and
+	myServoHandler.clearServoHandler()
 								# re-read config file
 	if (read_config_file()):
-		logging.info("Confiugration refreshed on user request")
+		logging.info("Configuration refreshed on user request")
 
 
 # ------------------------------------------------------------------------
@@ -537,7 +547,7 @@ def report_config_file():
 def report_inputs():
 	print ""
 	print "# --- Input list ---"
-	for i in inputList:
+	for i in myPins.inputList:
 		print "id=", i.id, "gpio=", i.gpio, "name=", i.name
 	print ""
 	return 0
@@ -549,7 +559,7 @@ def report_inputs():
 def report_routes():
 	print ""
 	print "# --- Route list ---"
-	for r in routeList:
+	for r in myLayout.routeList:
 		print "id=", r.id, "input1=", r.input1, "input2=", r.input2, \
 			"settings=", r.settings
 	print ""
@@ -562,7 +572,7 @@ def report_routes():
 def report_turnouts():
 	print ""
 	print "# --- Turnout list ---"
-	for t in turnoutList:
+	for t in myLayout.turnoutList:
 		print "id=", t.id, "board=", t.board, \
 		"channel=", t.channel, "posclos=", t.posclos, \
 		"posthro=", t.posthro, "name=", t.name
@@ -590,13 +600,37 @@ def explain():
 	return 0
 	
 
+
+# ------------------------------------------------------------------------
+# CODE STARTS HERE
+# ------------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------------
+# set logging level and format
+# ------------------------------------------------------------------------
+logging.basicConfig(level=logging.DEBUG, \
+			format='%(asctime)s: %(levelname)s: %(message)s', \
+			datefmt='%Y-%m-%d,%I:%M:%S')
+
+
+# ------------------------------------------------------------------------
+# define some objects we need
+# ------------------------------------------------------------------------
+
+myLayout = layout("rasp_routes_py")				# functionality
+
+myServoHandler = gawServoHandler.servoHandler()	# output
+				
+inpEvent = inputEvent()							# input
+myPins = inputPins()
+
+
 # ------------------------------------------------------------------------
 # main line
 # ------------------------------------------------------------------------
 
 if (read_config_file()):
-
-	explain()
 	
 	while True:
 		reply = raw_input("> ") 
@@ -614,7 +648,7 @@ if (read_config_file()):
 		else:
 			logging.warning("invalid command, type help")
 
-	GPIO.cleanup()
+	myPins.cleanup()
 	logging.info("user ended session")
 	exit(0)
 
