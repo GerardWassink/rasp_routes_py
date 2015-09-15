@@ -38,7 +38,6 @@
 from Adafruit_PWM_Servo_Driver import PWM
 import RPi.GPIO as GPIO
 import gawServoHandler
-import gawLayout
 import time
 import re
 import logging
@@ -180,10 +179,10 @@ class layout:
 
 
 	def setRoute(self, id):
-		logging.info("setting route from" + str(self.input1) + \
-							 "to" + str(self.input2) + "-" + self.settings)
 		for r in self.routeList:
 			if r.id == id:
+				logging.info("setting route from" + str(r.input1) + \
+							 "to" + str(r.input2) + "-" + r.settings)
 				tn = 0		# Walk through settings
 				for s in r.settings:
 					s = s.upper()
@@ -277,7 +276,7 @@ class input:
 		GPIO.add_event_detect(self.gpio, \
 					GPIO.RISING, \
 					callback=inpEvent.event, \
-					bouncetime=75)
+					bouncetime=100)
 
 								# remove event from this gpio
 	def removeEvent(self):
@@ -504,7 +503,7 @@ def read_config_file():
 	print "Welcom to " + myLayout.name
 	print "--------------------------------------------------------------------------------"
 	print ""
-	print "Reading and checking configuration file"
+	print "Reading and checking configuration file, initializing hardware"
 
 	lc = 1						# set line count
 	
@@ -685,7 +684,7 @@ logging.basicConfig(level=logging.DEBUG, \
 # define some objects we need
 # ------------------------------------------------------------------------
 
-myLayout = gawLayout.layout("rasp_routes_py")	# functionality
+myLayout = layout("rasp_routes_py")	# functionality
 
 myServoHandler = gawServoHandler.servoHandler()	# output
 				
