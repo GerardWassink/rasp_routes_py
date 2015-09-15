@@ -2,25 +2,29 @@
 There are a number of things still to be done before this program is ready to be used:
 
 ### layout object
-* layout object uitbreiden met
+* layout object met
 	* config file
 	* turnoutList
 	* inputList
 	* routeList
-	* logging & level ?
 
 ### non standard config file
 * be able to read another config file from command line
 
-### calibrate servo's
-* build code to be able to calibrate servo's
-	* set servo to middle between closed and thrown settings
-	* accept input to move towards closed position
-	* until user is satisfied and inputs **`done`**
-	* accept input to move towards thrown position
-	* until user is satisfied and inputs **`done`**
 
 # DONE list
+
+### isolate handling of servo's (DONE 2015-09-15)
+* isolate handling of servo's in a Class tree
+	Implemented in gawServoHandler.py, a library to handle servo's using the AdaFruit 16 channel servo HAT through I2C, making use of the Adafruit libraries.
+
+### calibrate servo's (DONE 2015-09-15)
+* build code to be able to calibrate servo's, implemented in gawServoCalibrate.py
+	* input board (or 'q' to quit)
+	* input channel (or 'q' to retrun to board input)
+	* input position (or 'q' to return to channel input)
+	* move servo to given position
+	* press 'q' three times to quit
 
 ### std logging (DONE 2015-09-14)
 * logging ombouwen naar standaard Python?
