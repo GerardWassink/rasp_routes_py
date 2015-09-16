@@ -59,7 +59,6 @@ while (1):
 	sBoard = raw_input("enter board> ") 
 	if sBoard == "q": break
 	board = int(sBoard)
-	myServoHandler.addBoard(board)
 	print "B:" + sBoard
 	
 	while (1):
@@ -67,7 +66,6 @@ while (1):
 		sChannel = raw_input("enter channel> ") 
 		if sChannel == "q": break
 		channel = int(sChannel)
-		myServoHandler.addServo(board, channel)
 		print "B:" + sBoard + " C:" + sChannel + " to mid-position (300)"
 		myServoHandler.setServo(board, channel, 300)
 
