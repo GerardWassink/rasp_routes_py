@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 # ------------------------------------------------------------------------
-# Program		:	rasp_routes_py.py
+# Program		:	test_routes_py.py
 # Author		:	Gerard Wassink
 # Date			:	4 september 2015
 #
@@ -43,59 +43,6 @@ import re
 import logging
 
 
-
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# Candidate for extraction to library.
-# will not work at this time because it refers to "myServoHandler", an
-# instance that is not known when in separate file.
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# Program		:	gawLayout.py
-# Author		:	Gerard Wassink
-# Date			:	15 september 2015
-#
-# Function		:	Handle model railroad layout stuff
-#
-# offers:
-#		setName(name)
-#		clearLayout(name)
-#		addTurnout(is, board, channel, posclos, posthro, name)
-#		addRoute(id, input1, input2, settings)
-#		closeTurnout(id)
-#		throwTurnout(id)
-#		setRoute(id)
-#
-# Prerequisites	:
-#		gawServoHandler
-#		logging
-#
-# ------------------------------------------------------------------------
-# 						GNU LICENSE CONDITIONS
-# ------------------------------------------------------------------------
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 2 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License along
-# with this program; if not, write to the Free Software Foundation, Inc.,
-# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
-#
-# ------------------------------------------------------------------------
-# Usage of this library is at the user's own risk, author will not be held
-# responsible for any damage to your hardware. Especially the positioning
-# of servo's has to be done with the greatest possible care.
-#
-# ------------------------------------------------------------------------
-#				Copyright (C) 2015 Gerard Wassink
-# ------------------------------------------------------------------------
-
 # ------------------------------------------------------------------------
 # class definition for Layout object
 # 
@@ -111,14 +58,11 @@ import logging
 # ------------------------------------------------------------------------
 class layout:
 	def __init__(self, name):
-		self.name = name
-		self.turnoutList = []
-		self.routeList = []
-
+		self.clearLayout(name)
+		self.servoHandler = gawServoHandler.servoHandler()	# output
 		
 	def setName(self, name):
 		self.name = name
-	
 	
 	def clearLayout(self, name):
 		self.name = name
@@ -137,21 +81,6 @@ class layout:
 			self.turnoutList.append(t)
 		else:
 			logging.error("trying to add duplicate turnout, id=" + str(id))
-
-
-	def addRoute(self, id, input1, input2, settings):
-		found = 0				# Try to find route
-		for r in self.routeList:
-			if r.id == id:
-				found = 1
-				break
-		if found == 0:			# only add once
-			self.routeList.append(route(id, \
-						input1, \
-						input2, \
-						settings ) )
-		else:
-			logging.error("trying to add duplicate route, id=" + str(id))
 
 
 	def closeTurnout(self, id):
@@ -176,6 +105,21 @@ class layout:
 			t.setThrown()
 		else:
 			logging.error("trying to throw unknown turnout, id=" + str(id))
+
+
+	def addRoute(self, id, input1, input2, settings):
+		found = 0				# Try to find route
+		for r in self.routeList:
+			if r.id == id:
+				found = 1
+				break
+		if found == 0:			# only add once
+			self.routeList.append(route(id, \
+						input1, \
+						input2, \
+						settings ) )
+		else:
+			logging.error("trying to add duplicate route, id=" + str(id))
 
 
 	def setRoute(self, id):
@@ -210,19 +154,22 @@ class turnout:
 		self.name = name
 		self.CLOSED = 0
 		self.THROWN = 1
+		self.state = -1
 		self.setClosed()		# Initial position closed
 
 
 								# set servo to turnouts closed position
 	def setClosed(self):
-		myServoHandler.setServo(self.board, self.channel, self.posclos)
-		self.state = self.CLOSED
+		if self.state != self.CLOSED:
+			myLayout.servoHandler.setServo(self.board, self.channel, self.posclos)
+			self.state = self.CLOSED
 	
 	
 								# set servo to turnouts thrown position
 	def setThrown(self):
-		myServoHandler.setServo(self.board, self.channel, self.posthro)
-		self.state = self.THROWN
+		if self.state != self.THROWN:
+			myLayout.servoHandler.setServo(self.board, self.channel, self.posthro)
+			self.state = self.THROWN
 
 
 # ------------------------------------------------------------------------
@@ -237,8 +184,6 @@ class route:
 
 
 
-
-
 # ------------------------------------------------------------------------
 # class definition for gpio pins
 # ------------------------------------------------------------------------
@@ -246,11 +191,12 @@ class inputPins:
 	def __init__(self):
 		self.inputList = []
 
-	def cleanup(self):
-		GPIO.cleanup()
-
 	def addPin(self, id, gpio, name):
 		self.inputList.append(input(id, gpio, name) )
+
+	def cleanup(self):
+		self.clearPins()
+		GPIO.cleanup()
 
 	def clearPins(self):
 		for i in self.inputList:
@@ -270,16 +216,18 @@ class input:
 		self.setup()
 
 								# Setup this object's GPIO as an input line
-								# with pull-up
+								# with pull-up, and set event detection
 	def setup(self):
 		GPIO.setup(self.gpio, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+		logging.debug("Adding event for input:" + str(self.gpio))
 		GPIO.add_event_detect(self.gpio, \
 					GPIO.RISING, \
 					callback=inpEvent.event, \
-					bouncetime=100)
+					bouncetime=150)
 
 								# remove event from this gpio
 	def removeEvent(self):
+		logging.debug("Removing event for input:" + str(self.gpio))
 		GPIO.remove_event_detect(self.gpio)
 
 								# Read the current value os this object's
@@ -299,25 +247,26 @@ class inputEvent:
 
 								# event occurred, input gpio specified
 	def event(self, val):
-		if (GPIO.input(val)):	# run only on button release
+		if (GPIO.input(val)):	# run only on button release (pull-ups in effect)
 
 								# prevent double handling of same button
 			if val != self.lastval:
 				self.lastval = val
+				logging.debug("event for input:" + str(val))
 
-				logging.info("event for input:" + str(val))
-
-								# did we have it already?
+								# button already pushed?
 				if self.input1 == val or self.input2 == val:
-					logging.info("already got it!")
+					logging.debug("already got it!")
 		 
-								# input1 still empty? sore it there
+								# input1 still empty? store it there
 				elif self.input1 == -1:
 					self.input1 = val
+					logging.debug("stored in slot 1")
 
-								# no, but input2 empty? sore it there
+								# if not, is input2 empty? store it there
 				elif self.input2 == -1:
 					self.input2 = val
+					logging.debug("stored in slot 2")
 
 								# two inputs received
 								# input 1 > 2? switch them around
@@ -325,8 +274,9 @@ class inputEvent:
 						t = self.input1
 						self.input1 = self.input2
 						self.input2 = t
+						logging.debug("swapped slot 1 and 2")
 
-					logging.info("Triggering event for " + str(self.input1) + \
+					logging.debug("Triggering event for " + str(self.input1) + \
 							" " + str(self.input2))
 
 								# look for valid route
@@ -407,9 +357,7 @@ def parseTurnoutLine(line, tid, lc):
 			logging.info("name not specified in Turnout line " + str(lc) + \
 				"- default of:" + tname + " substituted")
 	
-		myServoHandler.addBoard(int(board), 50)
-		myServoHandler.addServo(int(board), int(chan))
-
+		logging.debug("Adding turnout to list:" + tname)
 		myLayout.addTurnout(int(id), int(board), int(chan), \
 									int(posclos), int(posthro), tname)
 
@@ -459,6 +407,7 @@ def parseRouteLine(line, rid, lc):
 			logging.info("input2 not specified in Route line " + str(lc) + \
 				"- default of 0 substituted")
 	
+		logging.debug("Adding route to List:" + id)
 		myLayout.addRoute(int(rid), \
 					int(inp1), \
 					int(inp2), \
@@ -590,9 +539,7 @@ def refresh_config():
 	myPins.clearPins()			# before refreshing, remove event triggers
 								# clear Mylayout
 	myLayout.clearLayout("rasp_routes_py refreshing")
-								# clear board stack and
-	myServoHandler.clearServoHandler()
-								# re-read config file
+								# clear Mylayout
 	if (read_config_file()):
 		logging.info("Configuration refreshed on user request")
 
@@ -673,9 +620,17 @@ def explain():
 
 
 # ------------------------------------------------------------------------
-# set logging level and format
+# Choose logging level
 # ------------------------------------------------------------------------
-logging.basicConfig(level=logging.DEBUG, \
+LOGLEVEL = logging.DEBUG
+#LOGLEVEL = logging.WARNING
+#LOGLEVEL = logging.ERROR
+#LOGLEVEL = logging.CRITICAL
+
+# ------------------------------------------------------------------------
+# Set logging format
+# ------------------------------------------------------------------------
+logging.basicConfig(level=LOGLEVEL, \
 			format='%(asctime)s: %(levelname)s: %(message)s', \
 			datefmt='%Y-%m-%d,%I:%M:%S')
 
@@ -683,13 +638,10 @@ logging.basicConfig(level=logging.DEBUG, \
 # ------------------------------------------------------------------------
 # define some objects we need
 # ------------------------------------------------------------------------
+myLayout = layout("rasp_routes_py")				# functionality
 
-myLayout = layout("rasp_routes_py")	# functionality
-
-myServoHandler = gawServoHandler.servoHandler()	# output
-				
-inpEvent = inputEvent()							# input
-myPins = inputPins()
+myPins = inputPins()							# input
+inpEvent = inputEvent()
 
 
 # ------------------------------------------------------------------------
@@ -709,10 +661,11 @@ if (read_config_file()):
 		elif reply == "LR":						report_routes()
 		elif reply == "FRESH" or reply == "F":	refresh_config()
 		elif reply == "HELP" or reply == "H":	explain()
-		elif reply == "STATE" or reply == "S":	inpEvent.status()
 
 		else:
 			logging.warning("invalid command, type help")
+
+		time.sleep(0.2)
 
 	myPins.cleanup()
 	logging.info("user ended session")

@@ -3,14 +3,12 @@
 # ------------------------------------------------------------------------
 # Program		:	gawServoHandler.py
 # Author		:	Gerard Wassink
-# Date			:	15 september 2015
+# Date			:	16 september 2015
 #
 # Function		:	Handle servo control for the:
 #					Adafruit 16 channel servo HAT stack
 #
 # Offers		:
-#		addBoard(address, frequency)
-#		addServo(address, channel)
 #		setServo(address, channel, position)
 #
 # Prerequisites	:
@@ -55,112 +53,12 @@ import logging
 # --------------------------------------------------------------------------------
 class servoHandler:
 	def __init__(self):
-		self.boardStack = servoBoardStack()
+		self.frequency = 50
+		self.lastAddress = -1
 	
-	
-	def clearServoHandler(self):
-		for b in self.boardStack.boardList:
-			b.servoList = []
-		self.boardStack.boardList = []
-	
-	
-	def addBoard(self, address=0x40, freq=50):
-		found = 0
-								# Try to find board
-		for b in self.boardStack.boardList:
-			if b.boardAddress == address:
-				found = 1
-				break
-								# Not found? Add it to the list
-		if found == 0:
-			self.boardStack.boardList.append(servoBoard(address=address, frequency=freq))
-
-
-	def addServo(self, address=0x40, channel=0):
-		found = 0
-								# Find board
-		for b in self.boardStack.boardList:
-			if b.boardAddress == address:
-								# Try to find servo
-				for s in b.servoList:
-					if s.servoChannel == channel:
-						found = 1
-						break
-								# Not found? Add it to the list
-		if found == 0:
-			b.servoList.append(servo(address=address, channel=channel))
-		else:
-			logging.warning("asked to add same servo twice, address:" + \
-						hex(address) + ", channel:" + \
-						str(channel))
-
-
 	def setServo(self, address, channel, pos):
-		found = 0
-								# Find board
-		for b in self.boardStack.boardList:
-			if b.boardAddress == address:
-								# Find servo
-				for s in b.servoList:
-					if s.servoChannel == channel:
-						found = 1
-								# found: set board address and set servo to pos
-						s.setPos(pos)
-								# Not found: Error
-		if found == 0:
-			logging.warning("asked to set servo that is not in the list, address:" + \
-						hex(address) + ", channel:" + \
-						str(channel))
-
-
-# --------------------------------------------------------------------------------
-# Helper class for Handling board stacks 
-# 	This is formal and a bit theoretical to make the class tree represent the 
-# 	outside world
-# --------------------------------------------------------------------------------
-class servoBoardStack:
-	def __init__(self):
-		self.boardList = []
-
-
-# --------------------------------------------------------------------------------
-# Helper class per servo HAT board, each holds max 16 channels (0-15)
-#	class stores address and desired frequency per board
-#	also it contains a list of connected servo's
-# --------------------------------------------------------------------------------
-class servoBoard:
-	def __init__(self, address=0x40, frequency=50):
-		self.boardAddress = address
-		self.boardFrequency = frequency
-		#self.pwm = PWM(self.boardAddress, debug=True)
-		self.pwm = PWM(self.boardAddress)			# set board to be used
-		self.pwm.setPWMFreq(self.boardFrequency)	# just to be sure, set frequency
-		self.servoList = []
-
-
-# --------------------------------------------------------------------------------
-# Helper class per servo
-#	for convenience it stores the address as well as the channel
-#
-#	offers	: setPos(position)
-#				will not set servo to same position more than once
-# --------------------------------------------------------------------------------
-class servo:
-	def __init__(self, address=0x40, channel=0):
-		self.servoAddress = address
-		self.servoChannel = channel
-		self.lastPos = 0
-	
-	
-	def setPos(self, pos):
-								# Prevent doing it twice to same pos
-		if pos != self.lastPos:
-			self.lastPos = pos	# Store position
-								# Initiate board address
-			self.pwm = PWM(self.servoAddress)
-								# Set the servo position
-			self.pwm.setPWM(self.servoChannel, 0, pos)
-								# wait for a bit to allow for positioning
-			time.sleep(0.3)
-
-
+		if address != self.lastAddress:
+			self.pwm = PWM(address)				# set board address
+			self.pwm.setPWMFreq(self.frequency)	# just to be sure, set frequency
+		self.pwm.setPWM(channel, 0, pos)	# Set the servo position
+		time.sleep(0.3)						# wait for a bit to allow for positioning
