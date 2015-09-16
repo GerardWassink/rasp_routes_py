@@ -70,7 +70,7 @@ while (1):
 		myServoHandler.setServo(board, channel, 300)
 
 		while (1):
-			sPos = raw_input("enter pos> ")
+			sPos = raw_input("enter position> ")
 			if sPos == "q": break	
 			pos = int(sPos)
 			myServoHandler.setServo(board, channel, pos)
