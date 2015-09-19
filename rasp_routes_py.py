@@ -44,6 +44,107 @@ import logging
 
 
 # ------------------------------------------------------------------------
+# Event handling not in a class, because that would create a new instance
+# every time, causing the semaphore not to work properly and generate all
+# kinds of unwanted side-effects and key's getting read to often
+# ------------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------------
+# global definitions for event handling
+# ------------------------------------------------------------------------
+event_input1 = -1
+event_input2 = -1
+event_lastval = -1
+event_semaphore = False
+
+
+							# event occurred, input gpio specified
+def eventHandler(gpio):
+	global event_input1
+	global event_input2
+	global event_lastval
+	global event_semaphore
+	
+	if (not event_semaphore):
+
+		event_semaphore = True	# Signal work in progress (no double calls)
+
+		if (GPIO.input(gpio)):	# get value from GPIO
+
+								# prevent double handling of same button
+			if gpio != event_lastval:
+				event_lastval = gpio
+				logging.debug("event for input:" + str(gpio))
+
+								# button already pushed?
+				if event_input1 == gpio or event_input2 == gpio:
+					logging.debug("already got it!")
+	 
+								# input1 still empty? store it there
+				elif event_input1 == -1:
+					event_input1 = gpio
+					logging.debug("stored in slot 1")
+
+								# if not, is input2 empty? store it there
+				elif event_input2 == -1:
+					event_input2 = gpio
+					logging.debug("stored in slot 2")
+
+								# two inputs received
+								# input 1 > 2? switch them around
+					if event_input1 > event_input2:
+						t = event_input1
+						event_input1 = event_input2
+						event_input2 = t
+						logging.debug("swapped slot 1 and 2")
+
+					logging.debug("Triggering event for " + \
+							str(event_input1) + " " + \
+							str(event_input2))
+
+								# look for valid route
+					found = 0
+					for r in myLayout.routeList:
+						if r.input1 == event_input1 and r.input2 == event_input2:
+								# valid route found, set route
+							found = 1
+							myLayout.setRoute(r.id)
+							break		# out of for loop
+
+								# valid route not found, clear event
+					if found == 0:
+						logging.warning("invalid combination of inputs, try again")
+
+					event_reset()
+
+				else:
+								# event when both full, should not happen
+					logging.warning("event occurred, both inputs already set. " + \
+						"Enter inputs again please")
+					event_reset()
+
+		time.sleep(0.5)			# wait for bounce
+		
+		event_semaphore = False	# Signal work done
+
+
+def event_reset():
+	global event_input1
+	global event_input2
+	global event_lastval
+
+	event_input1 = -1
+	event_input2 = -1
+	event_lastval = -1
+
+# ------------------------------------------------------------------------
+# End of global definitions
+# ------------------------------------------------------------------------
+
+
+
+# ------------------------------------------------------------------------
 # class definition for Layout object
 # 
 # offers:
@@ -222,99 +323,13 @@ class input:
 		logging.debug("Adding event for input:" + str(self.gpio))
 		GPIO.add_event_detect(self.gpio, \
 					GPIO.RISING, \
-					callback=inpEvent.event, \
+					callback=eventHandler, \
 					bouncetime=150)
 
 								# remove event from this gpio
 	def removeEvent(self):
 		logging.debug("Removing event for input:" + str(self.gpio))
 		GPIO.remove_event_detect(self.gpio)
-
-								# Read the current value os this object's
-								# GPIO line
-	def getval(self):
-		self.inpval = GPIO.input(self.gpio)
-
-
-# ------------------------------------------------------------------------
-# class definition for input events
-# ------------------------------------------------------------------------
-class inputEvent:
-	def __init__(self):			# event empty means both inputs are -1
-		self.input1 = -1
-		self.input2 = -1
-		self.lastval = -1
-
-								# event occurred, input gpio specified
-	def event(self, val):
-		if (GPIO.input(val)):	# run only on button release (pull-ups in effect)
-
-								# prevent double handling of same button
-			if val != self.lastval:
-				self.lastval = val
-				logging.debug("event for input:" + str(val))
-
-								# button already pushed?
-				if self.input1 == val or self.input2 == val:
-					logging.debug("already got it!")
-		 
-								# input1 still empty? store it there
-				elif self.input1 == -1:
-					self.input1 = val
-					logging.debug("stored in slot 1")
-
-								# if not, is input2 empty? store it there
-				elif self.input2 == -1:
-					self.input2 = val
-					logging.debug("stored in slot 2")
-
-								# two inputs received
-								# input 1 > 2? switch them around
-					if self.input1 > self.input2:
-						t = self.input1
-						self.input1 = self.input2
-						self.input2 = t
-						logging.debug("swapped slot 1 and 2")
-
-					logging.debug("Triggering event for " + str(self.input1) + \
-							" " + str(self.input2))
-
-								# look for valid route
-					found = 0
-					for r in myLayout.routeList:
-						if r.input1 == self.input1 and r.input2 == self.input2:
-								# valid route found, set route
-							found = 1
-							myLayout.setRoute(r.id)
-							break		# out of for loop
-
-								# valid route not found, clear event
-					if found == 0:
-						logging.warning("invalid combination of inputs, try again")
-
-					self.reset()
-
-				else:
-								# event when both full, should not happen
-					logging.warning("event occurred, both inputs already set. " + \
-						"Enter inputs again please")
-					self.reset()
-
-
-	def reset(self):
-		self.input1 = -1
-		self.input2 = -1
-		self.lastval = -1
-
-	
-	def status(self):
-		print "> - Status of events:"
-		if self.input1 != -1:
-			print "> - input 1 =", self.input1
-		else:
-			print "> - status is blank"
-		if self.input2 != -1:
-			print "> - input 2 =", self.input2
 
 
 # ------------------------------------------------------------------------
