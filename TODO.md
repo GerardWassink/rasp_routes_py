@@ -1,18 +1,22 @@
 # TODO list (rasp_routes_py program)
 There are a number of things still to be done before this program is ready to be used:
 
-### layout object
-* layout object met
-	* config file
-	* turnoutList
-	* inputList
-	* routeList
-
 ### non standard config file
 * be able to read another config file from command line
 
 
 # DONE list
+
+### improved input event handling (DONE 2015-09-19)
+* input event handling
+	* made eventhandler global instead of inside a class
+	* created semaphore to prevent double entry
+	* built in extra (short) timer before resetting semaphore
+
+### layout object (DONE 2015-09-19)
+* layout object with
+	* turnoutList
+	* routeList
 
 ### isolate handling of servo's (DONE 2015-09-15)
 * isolate handling of servo's in a Class tree
