@@ -71,7 +71,7 @@ There are a number of things still to be done before this program is ready to be
 
 [Explanation of the configuration file](./CONFIG.md)
 
-[Installation HOW TO file](./INSTALLATION.md)
+[Installation HOW TO file](./INSTALL.md)
 
 [Calibrating your servo's](./gawServoCalibrate.md)
 

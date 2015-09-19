@@ -79,7 +79,7 @@ Now suppose we want to set a route from the "Branchline" to "Team track 2 - Depa
 
 [Explanation of the configuration file](./CONFIG.md)
 
-[Installation HOW TO file](./INSTALLATION.md)
+[Installation HOW TO file](./INSTALL.md)
 
 [Calibrating your servo's](./gawServoCalibrate.md)
 

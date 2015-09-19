@@ -20,7 +20,7 @@ Usage of this program is at the user's own risk, author will not be held respons
 
 [Explanation of the configuration file](./CONFIG.md)
 
-[Installation HOW TO file](./INSTALLATION.md)
+[Installation HOW TO file](./INSTALL.md)
 
 [Calibrating your servo's](./gawServoCalibrate.md)
 
