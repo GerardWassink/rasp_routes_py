@@ -35,3 +35,16 @@ System responds by giving back the board and channel number entered as well as t
 
 **CAVEAT: entering invalid positions might damage your servo's. Use at own risk!**
 
+
+## See also:
+[Readme file](./README.md)
+
+[Explanation of the configuration file](./CONFIG.md)
+
+[Installation HOW TO file](./INSTALLATION.md)
+
+[Calibrating your servo's](./gawServoCalibrate.md)
+
+[Roadmap or TODO file](./TODO.md)
+
+[License file](./LICENSE)

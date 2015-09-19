@@ -75,6 +75,14 @@ Now suppose we want to set a route from the "Branchline" to "Team track 2 - Depa
 
 
 ## See also:
-[TODO or roadmap file](./TODO.md)
+[Readme file](./README.md)
 
-[README file](./README.md)
+[Explanation of the configuration file](./CONFIG.md)
+
+[Installation HOW TO file](./INSTALLATION.md)
+
+[Calibrating your servo's](./gawServoCalibrate.md)
+
+[Roadmap or TODO file](./TODO.md)
+
+[License file](./LICENSE)

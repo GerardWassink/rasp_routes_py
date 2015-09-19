@@ -16,6 +16,14 @@ This software is available under the conditions of the GNU General Public Licens
 Usage of this program is at the user's own risk, author will not be held responsible for any damage to your hardware. Especially the positioning of servo's has to be done with the greatest possible care.
 
 ## See also:
+[Readme file](./README.md)
+
 [Explanation of the configuration file](./CONFIG.md)
 
-[TODO or roadmap file](./TODO.md)
+[Installation HOW TO file](./INSTALLATION.md)
+
+[Calibrating your servo's](./gawServoCalibrate.md)
+
+[Roadmap or TODO file](./TODO.md)
+
+[License file](./LICENSE)

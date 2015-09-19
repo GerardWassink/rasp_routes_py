@@ -64,3 +64,17 @@ There are a number of things still to be done before this program is ready to be
 	* recieve route to be set
 	* split **`settings`** field in loose characters
 	* evaluate actions and act accordingly
+
+
+## See also:
+[Readme file](./README.md)
+
+[Explanation of the configuration file](./CONFIG.md)
+
+[Installation HOW TO file](./INSTALLATION.md)
+
+[Calibrating your servo's](./gawServoCalibrate.md)
+
+[Roadmap or TODO file](./TODO.md)
+
+[License file](./LICENSE)
