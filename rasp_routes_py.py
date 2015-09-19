@@ -656,7 +656,6 @@ logging.basicConfig(level=LOGLEVEL, \
 myLayout = layout("rasp_routes_py")				# functionality
 
 myPins = inputPins()							# input
-inpEvent = inputEvent()
 
 
 # ------------------------------------------------------------------------
