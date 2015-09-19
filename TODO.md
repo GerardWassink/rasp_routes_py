@@ -1,6 +1,9 @@
 # TODO list (rasp_routes_py program)
 There are a number of things still to be done before this program is ready to be used:
 
+### GPIO outputs
+* be able to specify gpio outputs next to servo outputs
+
 ### non standard config file
 * be able to read another config file from command line
 
