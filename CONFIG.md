@@ -19,7 +19,7 @@ These define the GPIO lines that must function as inputs. The input lines have t
 #### Turnout definition lines
 These define the addresses that must function as outputs. The output lines have the syntax as described below:
 
-**`turnout:[board]:[channel]:[posclos]:[posthro]:[turnout_name]`**
+**`turnout:[type]:[board]:[channel]:[posclos]:[posthro]:[turnout_name]`**
 
 #### Route definition lines
 These define valid routes in terms of combinations of buttons and desired positions of the turnouts. The route definition lines have the following syntax:
@@ -42,13 +42,19 @@ All input GPIO's will be inilialized as **`pull_up_down=GPIO.PUD_UP`**, meaning 
 
 **`descriptive_text`** - This text is used to descibe the input buttons. In my original use case these contain spur names.
 
-**`board`** - identification of the servo HAT board the servo is connected to. These numbers are specified in the documentation as hexadecimal numbers (i.e. 0x40). For ease of parsing this program expects decimal numbers, so 0x40 will be specified as 64 here.
+**`type`** - the type of turnout control, possible values:
 
-**`channel`** - the slot number for the servo (range 0-15) on the **`[board]`** given in the same line.
+* **`servo`** :: the turnout is operated by a servo
 
-**`posclos`** - the desired position for this turnout when in the closed position (broadly in the range 210-400).
+* **`relay`** :: the turnout is operated through a relay
+ 
+**`board`** - identification of the servo HAT board the servo or relay is connected to. These numbers are specified in the documentation as hexadecimal numbers (i.e. 0x20 or 0x40). For ease of parsing this program expects decimal numbers, so 0x40 will be specified as 64 here.
 
-**`posthro`** - the desired position for this turnout when in the thrown position (broadly in the range 210-400).
+**`channel`** - the slot number for the servo or relay (range 0-15) on the **`[board]`** given in the same line.
+
+**`posclos`** - the desired position for this turnout when in the closed position (broadly in the range 210-400 for servo's, and 0 or 1 for relays).
+
+**`posthro`** - the desired position for this turnout when in the thrown position (broadly in the range 210-400 for servo's, and 0 or 1 for relays).
 
 **`turnout_name`** - This text describes the names of your turnouts.
 
