@@ -47,6 +47,9 @@ import logging
 # Event handling not in a class, because that would create a new instance
 # every time, causing the semaphore not to work properly and generate all
 # kinds of unwanted side-effects and key's getting read to often
+#
+# ##### SINGLETON !?????
+#
 # ------------------------------------------------------------------------
 
 
