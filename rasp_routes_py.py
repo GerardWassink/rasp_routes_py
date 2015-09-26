@@ -37,6 +37,7 @@
 
 from Adafruit_PWM_Servo_Driver import PWM
 import RPi.GPIO as GPIO
+import gawRelayHandler
 import gawServoHandler
 import time
 import re
@@ -163,7 +164,8 @@ def event_reset():
 class layout:
 	def __init__(self, name):
 		self.clearLayout(name)
-		self.servoHandler = gawServoHandler.servoHandler()	# output
+		self.relayHandler = gawRelayHandler.relayHandler()	# output relays
+		self.servoHandler = gawServoHandler.servoHandler()	# output servo's
 		
 	def setName(self, name):
 		self.name = name
@@ -174,14 +176,14 @@ class layout:
 		self.routeList = []
 
 
-	def addTurnout(self, id, board, channel, posclos, posthro, name):
+	def addTurnout(self, id, type, board, channel, posclos, posthro, name):
 		found = 0				# Try to find turnout
 		for t in self.turnoutList:
 			if t.id == id:
 				found = 1
 				break
 		if found == 0:			# only add once
-			t = turnout(id, board, channel, posclos, posthro, name)
+			t = turnout(id, type, board, channel, posclos, posthro, name)
 			self.turnoutList.append(t)
 		else:
 			logging.error("trying to add duplicate turnout, id=" + str(id))
@@ -249,8 +251,9 @@ class layout:
 # class definition for turnout objects
 # ------------------------------------------------------------------------
 class turnout:
-	def __init__(self, id, board, channel, posclos, posthro, name):
+	def __init__(self, id, type, board, channel, posclos, posthro, name):
 		self.id = id
+		self.type = type
 		self.board = board
 		self.channel = channel
 		self.posclos = posclos
@@ -265,14 +268,20 @@ class turnout:
 								# set servo to turnouts closed position
 	def setClosed(self):
 		if self.state != self.CLOSED:
-			myLayout.servoHandler.setServo(self.board, self.channel, self.posclos)
+			if self.type == "servo":
+				myLayout.servoHandler.setServo(self.board, self.channel, self.posclos)
+			elif self.type == "relay":
+				myLayout.relayHandler.setRelay(self.board, self.channel, self.posclos)
 			self.state = self.CLOSED
 	
 	
 								# set servo to turnouts thrown position
 	def setThrown(self):
 		if self.state != self.THROWN:
-			myLayout.servoHandler.setServo(self.board, self.channel, self.posthro)
+			if self.type == "servo":
+				myLayout.servoHandler.setServo(self.board, self.channel, self.posthro)
+			elif self.type == "relay":
+				myLayout.relayHandler.setRelay(self.board, self.channel, self.posthro)
 			self.state = self.THROWN
 
 
@@ -341,42 +350,51 @@ class input:
 def parseTurnoutLine(line, tid, lc):
 							# break down Turnout line and create new turnout
 							# object in list of turnouts
-	m = re.match("[Tt].*[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)", line)
+	m = re.match("[Tt].*[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)", line)
 	if m:
 		id = str(tid)
 
-		board = m.group(1)
+		type = m.group(1)
+		x = re.match("(.).*", type)
+		t = x.group(1)
+		if (t == "s" or t == "S" or t == "r" or t == "R"):
+			type = type
+		else:
+			logging.error("type not specified in Turnout line " + str(lc))
+			exit(1)
+	
+		board = m.group(2)
 		if board == '':
 			board = '64'
 			logging.info("board not specified in Turnout line " + str(lc) + \
 				"- default of 64 substituted")
 	
-		chan = m.group(2)
+		chan = m.group(3)
 		if chan == '':
 			chan = '0'
 			logging.info("channel not specified in Turnout line " + str(lc) + \
 				"- default of 0 substituted")
 	
-		posclos = m.group(3)
+		posclos = m.group(4)
 		if posclos == '':
 			posclos ='210'
 			logging.info("posclos not specified in Turnout line " + str(lc) + \
 				"- default of 210 substituted")
 	
-		posthro = m.group(4)
+		posthro = m.group(5)
 		if posthro == '':
 			posclos ='400'
 			logging.info("posthro not specified in Turnout line " + str(lc) + \
 				"- default of 400 substituted")
 	
-		tname = m.group(5)
+		tname = m.group(6)
 		if tname == '':
 			tname = "T" + id
 			logging.info("name not specified in Turnout line " + str(lc) + \
 				"- default of:" + tname + " substituted")
 	
 		logging.debug("Adding turnout to list:" + tname)
-		myLayout.addTurnout(int(id), int(board), int(chan), \
+		myLayout.addTurnout(int(id), type, int(board), int(chan), \
 									int(posclos), int(posthro), tname)
 
 		return True
@@ -604,7 +622,7 @@ def report_turnouts():
 	print ""
 	print "# --- Turnout list ---"
 	for t in myLayout.turnoutList:
-		print "id=", t.id, "board=", t.board, \
+		print "id=", t.id, "board=", t.board, "type=", t.type, \
 		"channel=", t.channel, "posclos=", t.posclos, \
 		"posthro=", t.posthro, "name=", t.name
 	print ""
