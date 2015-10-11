@@ -180,6 +180,10 @@ class layout:
 	def setOwner(self, owner):
 		self.owner = owner
 	
+	#
+	# *** Turnout handling
+	#
+	
 	def addTurnout(self, id, type, board, channel, posclos, posthro, name):
 		found = 0				# Try to find turnout
 		for t in self.turnoutList:
@@ -217,6 +221,10 @@ class layout:
 			logging.error("trying to throw unknown turnout, id=" + str(id))
 
 
+	#
+	# *** Route handling
+	#
+	
 	def addRoute(self, id, input1, input2):
 		found = 0				# Try to find route
 		for r in self.routeList:
@@ -245,17 +253,20 @@ class layout:
 	def setRoute(self, id):
 		for r in self.routeList:
 			if r.id == id:
-				logging.info("setting route from" + str(r.input1) + \
-							 "to" + str(r.input2) + "-" + r.settings)
-				tn = 0		# Walk through settings
-				for s in r.settings:
-					s = s.upper()
+				logging.info("setting route from " + str(r.input1) + \
+							 " to " + str(r.input2))
+				tn = 0		# Walk through turnouts to be set
+				for s in r.setTurnoutList:
+					name = s.name
+					position = s.position.upper()
 					for t in self.turnoutList:
-						if t.id == tn:
-							if s == 'T':
+						if t.name == name:
+							if position == "THROWN":
 								self.throwTurnout(t.id)
-							elif s == 'C':
+								logging.debug("\tthrowing turnout " + name)
+							elif position == "CLOSED":
 								self.closeTurnout(t.id)
+								logging.debug("\tclosing turnout " + name)
 							break
 					tn += 1
 			
@@ -372,14 +383,17 @@ def read_config_file():
 								# set falling edge events for them
 	GPIO.setmode(GPIO.BCM)		# set up GPIO using BCM numbering
 
+								#
 								# read the xml configuration file
 	xmldoc = minidom.parse('rasp_routes_py.xml')
-
-								# find the description
+	
+								#
+								# *** find the description parts
 	dList = xmldoc.getElementsByTagName('description')
 	for d in dList:
 		myLayout.setName(d.attributes['name'].value)
 		myLayout.setOwner(d.attributes['owner'].value)
+
 
 	print "--------------------------------------------------------------------------------"
 	print "Welcom to " + myLayout.name
@@ -389,13 +403,16 @@ def read_config_file():
 	print ""
 	print "Reading and checking configuration file, initializing hardware"
 	
-								# process range lines
+								#
+								# process input range lines
 	irList = xmldoc.getElementsByTagName('input_range')
 	for ir in irList:
 		gpio_min=int(ir.attributes['gpio_min'].value)
 		gpio_max=int(ir.attributes['gpio_max'].value)
 		logging.debug("Range for gpio-numbers, min=" + str(gpio_min) + ", max=" + str(gpio_max))
 	
+								#
+								# process relay turnout range lines
 	rtrList = xmldoc.getElementsByTagName('relay_turnout_range')
 	for rtr in rtrList:
 		r_adr_min=int(rtr.attributes['adr_min'].value)
@@ -406,6 +423,8 @@ def read_config_file():
 				", min_adr=" + str(r_adr_min) + ", max_adr=" + str(r_adr_max) + \
 				", min_pos=" + str(r_pos_min) + ", max_pos=" + str(r_pos_max) )
 	
+								#
+								# process servo turnout range lines
 	strList = xmldoc.getElementsByTagName('servo_turnout_range')
 	for strg in strList:
 		s_adr_min=int(strg.attributes['adr_min'].value)
@@ -416,7 +435,7 @@ def read_config_file():
 				", min_adr=" + str(s_adr_min) + ", max_adr=" + str(s_adr_max) + \
 				", min_pos=" + str(s_pos_min) + ", max_pos=" + str(s_pos_max) )
 	
-	
+								#
 								# process input lines
 	iList = xmldoc.getElementsByTagName('input')
 	iid = 0
@@ -424,6 +443,8 @@ def read_config_file():
 	for i in iList:
 		gpio=int(i.attributes['gpio'].value)
 		name=i.attributes['name'].value
+								#
+								# test against specified ranges
 		if gpio_min <= gpio <= gpio_max:
 			logging.debug("Adding input to list: " + name)
 			myPins.addPin(iid, gpio, name)
@@ -432,6 +453,7 @@ def read_config_file():
 			logging.error("gpio out of range for input '" + name + "', NOT ADDED")
 	
 	
+								#
 								# process turnout lines
 	tList = xmldoc.getElementsByTagName('turnout')
 	tid = 0
@@ -443,12 +465,29 @@ def read_config_file():
 		posclos=int(t.attributes['posclos'].value)
 		posthro=int(t.attributes['posthro'].value)
 		name=t.attributes['name'].value
-		logging.debug("Adding turnout to list: " + name)
-		myLayout.addTurnout(tid, type, boardAddress, channel, \
-									posclos, posthro, name)
-		tid += 1
+								#
+								# test against specified ranges
+		if 	(	(type.upper() == "RELAY") & \
+				(r_adr_min <= boardAddress <= r_adr_max) & \
+				(0 <= channel <= 15) & \
+				(r_pos_min <= posclos <= r_pos_max) & \
+				(r_pos_min <= posthro <= r_pos_max ) 	) \
+			| \
+			(	(type.upper() == "SERVO") & \
+				(s_adr_min <= boardAddress <= s_adr_max) & \
+				(0 <= channel <= 15) & \
+				(s_pos_min <= posclos <= s_pos_max) & \
+				(s_pos_min <= posthro <= s_pos_max) 	):
+
+			logging.debug("Adding turnout to list: " + name)
+			myLayout.addTurnout(tid, type, boardAddress, channel, \
+										posclos, posthro, name)
+			tid += 1
+		else:
+			logging.error("value out of range for turnout '" + name + "', NOT ADDED")
 	
 	
+								#
 								# process route lines
 	rList = xmldoc.getElementsByTagName('route')
 	rid = 0
@@ -458,18 +497,22 @@ def read_config_file():
 		input2=int(r.attributes['input2'].value)
 		logging.debug("Adding route to List: " + str(rid))
 		myLayout.addRoute(rid, input1, input2)
-		
+								#
 								# process route turnouts to be set
 		sList = r.getElementsByTagName('set_turnout') 
 		for s in sList:
 			name = s.attributes['name'].value
 			position = s.attributes['position'].value
-			logging.debug("Adding turnout to route: " + str(rid) + " " + name + " " + position)
-			myLayout.addRouteTurnout(rid, name, position)
+								#
+								# test against specified ranges
+			if (position.upper() == "CLOSED") | (position.upper() == "THROWN"):
+				logging.debug("Adding turnout to route: " + str(rid) + " " + name + " " + position)
+				myLayout.addRouteTurnout(rid, name, position)
+			else:
+				logging.error("position value error for route " + str(rid) + \
+							", set_turnout '" + name + "', NOT ADDED")
 
 		rid += 1
-	
-	checkConfigLists()			# check for errors after building lists
 	
 	print "--------------------------------------------------------------------------------"
 	print "Welcome to " + myLayout.name
@@ -478,34 +521,6 @@ def read_config_file():
 	print "--------------------------------------------------------------------------------"
 
 	return res
-
-
-# ------------------------------------------------------------------------
-# check lists after reading config file
-# ------------------------------------------------------------------------
-def checkConfigLists():
-								# after reading, check lists for mismatching ID's
-								# and other possible errors
-								
-								# turnout list ID's
-#	for t in myBoards.servoBoard.turnoutList:
-#		if t.posclos < 210:
-#			logging.info("closed value for turnout '" + t.name + \
-#				"' less than 210, only proceed if this is intentional")
-#		if t.posthro > 400:
-#			logging.info("thrown value for turnout '" + t.name + \
-#				"' greater than 400, only proceed if this is intentional")
-	
-								# input list ID's
-	for i in myPins.inputList:
-		if i.gpio == 2 or i.gpio == 3:
-			logging.error("port 2 or 3 use for input '" + i.name + \
-				"' during I2C servo operation, program will end")
-			exit(1)
-	
-								# route list ID's
-#	for r in routeList:
-								# no checks yet
 
 
 # ------------------------------------------------------------------------
@@ -549,8 +564,9 @@ def report_routes():
 	print ""
 	print "# --- Route list ---"
 	for r in myLayout.routeList:
-		print "id=", r.id, "input1=", r.input1, "input2=", r.input2, \
-			"settings=", r.settings
+		print "id=", r.id, "input1=", r.input1, "input2=", r.input2
+		for t in r.setTurnoutList:
+			print "\t" + t.name + " " + t.position
 	print ""
 	return 0
 
@@ -591,7 +607,7 @@ def explain():
 
 
 # ------------------------------------------------------------------------
-# CODE STARTS HERE
+# MAIN CODE STARTS HERE												MAIN
 # ------------------------------------------------------------------------
 
 
@@ -624,9 +640,6 @@ myPins = inputPins()							# input
 # ------------------------------------------------------------------------
 
 if (read_config_file()):
-	
-	myPins.cleanup()
-	exit(0)
 	
 	while True:
 		reply = raw_input("> ") 

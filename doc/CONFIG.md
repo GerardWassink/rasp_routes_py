@@ -1,83 +1,71 @@
 # Configuration file
-The program is driven by a configuration file. This file knows the following types of lines:
+The program is driven by a configuration file in XML format. This file is called **`rasp_routes_py.xml`** rather self-explanatory. To be sure, a quick description follows below:
 
-## Line types
+## Sections
+In the configuration file we use sections and labels. In the list here-after you will find sections in **`bold`** and labels in ***`italic`***. In the XML file you will see things like:
 
-#### Comment or empty lines
-Do nothing, just for documentation purposes. Comment lines start with '#'
-	
-#### Name of Layout line
-This line - there's typically only one of these - defines the name of the Layout. This name is used in the welcome and closing messages. The input lines have the following syntax (individual fields are described further down):
+<**`section`** ***`label1`***="value" ***`label2`***="value"/>
 
-**`name:[layout_name]`**
+#### List of sections and labels:
+* **`layout`** :: Contains all other sections
 
-#### Input definition lines
-These define the GPIO lines that must function as inputs. The input lines have the following syntax:
+	* **`description`** :: contains general information
+		* ***`name`*** :: contains the name of the layout
+		* ***`owner`*** :: when present, contains the name of the layout owner
 
-**`input:[gpio_number]:[descriptive_text]`**
+	* **`input_range`** :: specifies ranges for input specifications
+		* ***`gpio_min`*** :: gpio's specified may not be less then this number
+		* ***`gpio_max`*** :: gpio's specified may not be higher then this number
 
-#### Turnout definition lines
-These define the addresses that must function as outputs. The output lines have the syntax as described below:
+	* **`relay_turnout_range`** or **`servo_turnout_range`** :: specifies ranges for relay or servo turnout specifications
+		* ***`adr_min`*** :: boardAddress specified may not be less then this number
+		* ***`adr_max`*** :: boardAddress specified may not be higher then this number
+		* ***`pos_min`*** :: position specified may not be less then this number
+		* ***`pos_max`*** :: position specified may not be higher then this number
 
-**`turnout:[type]:[board]:[channel]:[posclos]:[posthro]:[turnout_name]`**
+	* **`turnouts`** :: contains turnout specifications
+		* **`turnout`** :: specifies characteristics of one turnout
+			* ***`type`*** :: contains "servo" or "relay"
+			* ***`boardAddress`*** :: the address from which the servo is driven
+			* ***`channel`*** :: the channel on that board (0-15)
+			* ***`posclos`*** :: the position when closed
+			* ***`posthro`*** :: the position when opened
+			* ***`name`*** :: the name of the turnout
+		
+	* **`inputs`** :: contains input specifications
+		* **`input`** :: specifies characteristics for one input
+			* ***`gpio`*** :: specifies the gpio pin for this input
+			* ***`name`*** :: specifies the (spur) name for this input
 
-#### Route definition lines
-These define valid routes in terms of combinations of buttons and desired positions of the turnouts. The route definition lines have the following syntax:
+	* **`routes`** :: contains route specifications
+		* **`route`** :: specifies characteristics for one route
+			* ***`input1`*** :: one of two inputs that must be activated for the route
+			* ***`input2`*** :: the other input that must be activated for the route
+			* **`turnout`** :: turnout to be set for this route
+				* ***`name`*** :: the name of the turnout, referring to the turnout list
+				* ***`position`*** :: the position to which the turnout is to be set for this route
 
-**`route:[input1]:[input2]:[turnout_states]`**
 
+### Special label descriptions
+Various special labels are described below.
 
-### Field descriptions
-The various fields are described below.
-
-**`layout_name`** - This text defines the name of the Layout.
-
-**`name`**, **`input`**, **`turnout`**, **`route`** - These are literals defining the line type. Actually, only their first letters are checked (n, i, t and r). These are case-independant.
-
-**`gpio_number`** - This is the number of the GPIO port that will be used for input.
+**`gpio`** - This is the number of the GPIO port that will be used for input.
 
 Mind you: These are NOT the pin numbers on the 40 pin header, they are the actual GPIO numbers as defined by Broadcom, for example: header pin 40 on the RPi connects to GPIO number 21. It is this last number, 21, that you would code here. Check the bcm2835 documentation for the relation between GPIO's and pin numbers.
 
 All input GPIO's will be inilialized as **`pull_up_down=GPIO.PUD_UP`**, meaning that they have to be pulled down to GND to activate.
 
-**`descriptive_text`** - This text is used to descibe the input buttons. In my original use case these contain spur names.
-
 **`type`** - the type of turnout control, possible values:
 
-* **`servo`** :: the turnout is operated by a servo
+**`boardAddress`** - identification of the board the servo or relay is connected to. These numbers are specified in the documentation as hexadecimal numbers (i.e. 0x20 or 0x40). For ease of parsing this program expects decimal numbers, so 0x40 will be specified as 64 here.
 
-* **`relay`** :: the turnout is operated through a relay
- 
-**`board`** - identification of the servo HAT board the servo or relay is connected to. These numbers are specified in the documentation as hexadecimal numbers (i.e. 0x20 or 0x40). For ease of parsing this program expects decimal numbers, so 0x40 will be specified as 64 here.
+**`channel`** - the slot number for the servo or relay (range 0-15) on the board given in the same line.
 
-**`channel`** - the slot number for the servo or relay (range 0-15) on the **`[board]`** given in the same line.
+**`posclos`** - the desired position for this turnout when in the closed position (the range for servo's and relays can be specified in the file, but commonly they are 210-400 for servo's, and 0 or 1 for relays).
 
-**`posclos`** - the desired position for this turnout when in the closed position (broadly in the range 210-400 for servo's, and 0 or 1 for relays).
-
-**`posthro`** - the desired position for this turnout when in the thrown position (broadly in the range 210-400 for servo's, and 0 or 1 for relays).
-
-**`turnout_name`** - This text describes the names of your turnouts.
+**`posthro`** - the desired position for this turnout when in the thrown position (the range for servo's and relays can be specified in the file, but commonly they are 210-400 for servo's, and 0 or 1 for relays).
 
 **`input1`** **`input2`** - A route is defined by two inputs, one as start- and one as end-point. Routes are specified by two input gpio_numbers. When for example we want a route from input 16 to input 18, we specify "16:18". Note that the route from 18 to 16 is identical (duh). While running, the program evaluates activated inputs in numerical order, so when one activates inputs 18 and 16 in that order, the program will evaluate that against a route identified by "16:18".
-
-**`turnout_states`** - This field is stored in a table parallel to the "valid routes" table. It contains 1 character per turnout, so the length of this field must be equal to the number of specified turnouts. The order of these positions corresponds to the order in which the turnout-lines are specified. The meaning of the values for each character in this field are:
-
-* **`t`** :: indicate that when the route is selected, this turnout must be set to thrown, the corresponding servo will be set to its defined thrown position, or the output GPIO will be set to HIGH
-
-* **`c`** :: indicate that when the route is selected, this turnout must be set to closed, the corresponding servo will be set to its defined closed position, or the output GPIO will be set to LOW
-
-* **`-`** :: the hyphen indicaties that this turnout is to be left alone, nothing happens to that turnout, it is left in the state it had.
-
-## Example
-In the rasp_routes_py.ini file you will find an example, based on my ***Washtown Industries*** yard. It's layout and relevant characteristics are enclosed as file '*Washtown_Industries.jpg*'. 
-
-![Washtown Industries](../gfx/Washtown_Industries.jpg)
-
-When you have a look in the rasp_routes_py.ini file, there is a route specified as:
-
-**`route:12:16:cctt--------`**
-
-Now suppose we want to set a route from the "Branchline" to "Team track 2 - Departure". We would then activate inputs 16 and 20, activating route ("12:16"). This would mean that the first and second specified turnouts (T400 and T401, see the turnout section) have to be set to Closed and that the third and fourth specified turnouts (T402 and T403) have to be set to Thrown. (picture does not represent the proper turnout names yet).
 
 
 ## See also:

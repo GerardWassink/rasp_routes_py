@@ -30,6 +30,12 @@
         <turnout type="relay" boardAddress="32" channel="05" posclos="0" posthro="1" name="T205"/>
         <turnout type="relay" boardAddress="32" channel="06" posclos="0" posthro="1" name="T206"/>
         <turnout type="relay" boardAddress="32" channel="07" posclos="0" posthro="1" name="T207"/>
+		
+		/* --- test lines for range tests */
+        <turnout type="relay" boardAddress="09" channel="07" posclos="0" posthro="1" name="T290test"/>
+        <turnout type="relay" boardAddress="32" channel="17" posclos="0" posthro="1" name="T291test"/>
+        <turnout type="relay" boardAddress="32" channel="07" posclos="-1" posthro="1" name="T292test"/>
+        <turnout type="relay" boardAddress="32" channel="07" posclos="0" posthro="9" name="T293test"/>
 
         <turnout type="servo" boardAddress="64" channel="00" posclos="210" posthro="400" name="T400"/>
         <turnout type="servo" boardAddress="64" channel="01" posclos="210" posthro="400" name="T401"/>
@@ -43,6 +49,12 @@
         <turnout type="servo" boardAddress="64" channel="09" posclos="210" posthro="400" name="T409"/>
         <turnout type="servo" boardAddress="64" channel="10" posclos="210" posthro="400" name="T40A"/>
         <turnout type="servo" boardAddress="64" channel="11" posclos="210" posthro="400" name="T40B"/>
+
+		/* --- test lines for range tests */
+        <turnout type="servo" boardAddress="07" channel="11" posclos="210" posthro="400" name="T490test"/>
+        <turnout type="servo" boardAddress="64" channel="17" posclos="210" posthro="400" name="T491test"/>
+        <turnout type="servo" boardAddress="64" channel="11" posclos="130" posthro="400" name="T492test"/>
+        <turnout type="servo" boardAddress="64" channel="11" posclos="210" posthro="777" name="T493test"/>
     </turnouts>
 	
 	/*
@@ -106,6 +118,7 @@
 			<set_turnout name="T202" position="closed"/>
 			<set_turnout name="T400" position="closed"/>
 			<set_turnout name="T401" position="closed"/>
+			<set_turnout name="T401a" position="close"/>	/* --- for testing only --- */
 			<set_turnout name="T402" position="thrown"/>
 			<set_turnout name="T403" position="closed"/>
 		</route>
