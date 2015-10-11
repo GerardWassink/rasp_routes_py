@@ -41,7 +41,7 @@ In the configuration file we use sections and labels. In the list here-after you
 		* **`route`** :: specifies characteristics for one route
 			* ***`input1`*** :: one of two inputs that must be activated for the route
 			* ***`input2`*** :: the other input that must be activated for the route
-			* **`turnout`** :: turnout to be set for this route
+			* **`set_turnout`** :: turnout to be set for this route
 				* ***`name`*** :: the name of the turnout, referring to the turnout list
 				* ***`position`*** :: the position to which the turnout is to be set for this route
 
