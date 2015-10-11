@@ -37,14 +37,14 @@ System responds by giving back the board and channel number entered as well as t
 
 
 ## See also:
-[Readme file](./README.md)
+[Readme file](../README.md)
 
-[Explanation of the configuration file](./CONFIG.md)
+[Explanation of the configuration file](../doc/CONFIG.md)
 
-[Installation HOW TO file](./INSTALL.md)
+[Installation HOW TO file](../doc/INSTALL.md)
 
-[Calibrating your servo's](./gawServoCalibrate.md)
+[Calibrating your servo's](../doc/gawServoCalibrate.md)
 
-[Roadmap or TODO file](./TODO.md)
+[Roadmap or TODO file](../doc/TODO.md)
 
-[License file](./LICENSE)
+[License file](../doc/LICENSE)
