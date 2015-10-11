@@ -16,7 +16,7 @@ Now you have installed the git software. you can now interact with [Github](http
 
 In your home directory, you now have a sub-directory with the name **`~/rasp_routes_py/`**. In that directory you will find Adafruit libraries and a library by me, **`gawServoHandler`**. Those libraries are needed to run the programs. The programs are:
 
-* **`rasp_routes_py.py`** (see [the help file](./README.md))
+* **`rasp_routes_py.py`** (see [the help file](../README.md))
 * **`gawServoCalibrate.py`** (see [the help file](./gawServoCalibrate.md))
 
 When you want to start these programs, be sure to do so using the **`sudo`** command. When you are in their directory:
@@ -26,7 +26,7 @@ When you want to start these programs, be sure to do so using the **`sudo`** com
 
 
 ## License / availability
-This software is available under the conditions of the GNU General Public License. See the [LICENSE file](./LICENCSE.md) for further details.
+This software is available under the conditions of the GNU General Public License. See the [LICENSE file](../LICENCSE.md) for further details.
 
 ## Use at own risk
 Usage of this program is at the user's own risk, author will not be held responsible for any damage to your hardware. Especially the positioning of servo's has to be done with the greatest possible care.
