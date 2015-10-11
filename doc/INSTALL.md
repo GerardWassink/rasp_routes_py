@@ -42,4 +42,4 @@ Usage of this program is at the user's own risk, author will not be held respons
 
 [Roadmap or TODO file](../doc/TODO.md)
 
-[License file](../doc/LICENSE)
+[License file](../LICENSE)

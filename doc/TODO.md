@@ -77,4 +77,4 @@ There are a number of things still to be done before this program is ready to be
 
 [Roadmap or TODO file](../doc/TODO.md)
 
-[License file](../doc/LICENSE)
+[License file](../LICENSE)

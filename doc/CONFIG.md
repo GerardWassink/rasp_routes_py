@@ -91,4 +91,4 @@ Now suppose we want to set a route from the "Branchline" to "Team track 2 - Depa
 
 [Roadmap or TODO file](../doc/TODO.md)
 
-[License file](../doc/LICENSE)
+[License file](../LICENSE)

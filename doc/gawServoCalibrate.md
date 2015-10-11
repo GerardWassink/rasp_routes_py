@@ -47,4 +47,4 @@ System responds by giving back the board and channel number entered as well as t
 
 [Roadmap or TODO file](../doc/TODO.md)
 
-[License file](../doc/LICENSE)
+[License file](../LICENSE)
