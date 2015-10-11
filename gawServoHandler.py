@@ -59,6 +59,7 @@ class servoHandler:
 	def setServo(self, address, channel, pos):
 		if address != self.lastAddress:
 			self.pwm = PWM(address)				# set board address
+#			self.pwm = PWM(address, debug=True)	# set board address
 			self.pwm.setPWMFreq(self.frequency)	# just to be sure, set frequency
 		self.pwm.setPWM(channel, 0, pos)	# Set the servo position
 		time.sleep(0.3)						# wait for a bit to allow for positioning

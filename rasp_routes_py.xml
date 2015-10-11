@@ -1,0 +1,114 @@
+<layout>
+	
+	/*
+	 * Describe your layout here
+	 */
+	
+	<description owner="Gerard Wassink"
+				name="Washtown and Beijville Railroad" />
+	
+	/*
+	 * Ranges specific for your situation
+	 */
+
+	<input_range gpio_min="04" gpio_max="27"/>
+
+	<relay_turnout_range adr_min="32" adr_max="32" pos_min="0" pos_max="1"/>
+
+	<servo_turnout_range adr_min="64" adr_max="64" pos_min="210" pos_max="400"/>
+	
+	/*
+	 * List your turnouts by type
+	 */
+	
+    <turnouts>
+        <turnout type="relay" boardAddress="32" channel="00" posclos="0" posthro="1" name="T200"/>
+        <turnout type="relay" boardAddress="32" channel="01" posclos="0" posthro="1" name="T201"/>
+        <turnout type="relay" boardAddress="32" channel="02" posclos="0" posthro="1" name="T202"/>
+        <turnout type="relay" boardAddress="32" channel="03" posclos="0" posthro="1" name="T203"/>
+        <turnout type="relay" boardAddress="32" channel="04" posclos="0" posthro="1" name="T204"/>
+        <turnout type="relay" boardAddress="32" channel="05" posclos="0" posthro="1" name="T205"/>
+        <turnout type="relay" boardAddress="32" channel="06" posclos="0" posthro="1" name="T206"/>
+        <turnout type="relay" boardAddress="32" channel="07" posclos="0" posthro="1" name="T207"/>
+
+        <turnout type="servo" boardAddress="64" channel="00" posclos="210" posthro="400" name="T400"/>
+        <turnout type="servo" boardAddress="64" channel="01" posclos="210" posthro="400" name="T401"/>
+        <turnout type="servo" boardAddress="64" channel="02" posclos="210" posthro="400" name="T402"/>
+        <turnout type="servo" boardAddress="64" channel="03" posclos="210" posthro="400" name="T403"/>
+        <turnout type="servo" boardAddress="64" channel="04" posclos="210" posthro="400" name="T404"/>
+        <turnout type="servo" boardAddress="64" channel="05" posclos="210" posthro="400" name="T405"/>
+        <turnout type="servo" boardAddress="64" channel="06" posclos="210" posthro="400" name="T406"/>
+        <turnout type="servo" boardAddress="64" channel="07" posclos="210" posthro="400" name="T407"/>
+        <turnout type="servo" boardAddress="64" channel="08" posclos="210" posthro="400" name="T408"/>
+        <turnout type="servo" boardAddress="64" channel="09" posclos="210" posthro="400" name="T409"/>
+        <turnout type="servo" boardAddress="64" channel="10" posclos="210" posthro="400" name="T40A"/>
+        <turnout type="servo" boardAddress="64" channel="11" posclos="210" posthro="400" name="T40B"/>
+    </turnouts>
+	
+	/*
+	 * List your inputs
+	 */
+	
+    <inputs>
+    	<input gpio="04" name="free 4"/>
+    	<input gpio="05" name="free 5"/>
+    	<input gpio="127" name="Test entry"/>		/* --- for testing only --- */
+    	<input gpio="06" name="free 6"/>
+    	<input gpio="07" name="free 7"/>
+    	<input gpio="08" name="free 8"/>
+    	<input gpio="09" name="free 9"/>
+    	<input gpio="10" name="free 10"/>
+    	<input gpio="11" name="free 11"/>
+    	<input gpio="12" name="free 12"/>
+    	<input gpio="13" name="free 13"/>
+    	<input gpio="14" name="free 14"/>
+    	<input gpio="15" name="free 15"/>
+    	<input gpio="16" name="Branchline"/>
+    	<input gpio="17" name="Maintenance track 1"/>
+    	<input gpio="18" name="Maintenance track 2"/>
+    	<input gpio="19" name="Team track 1 - Arrival"/>
+    	<input gpio="20" name="Team track 2 - Departure"/>
+    	<input gpio="21" name="Yard lead"/>
+    	<input gpio="22" name="Wilson Trucking"/>
+    	<input gpio="23" name="Golden Valley track 1"/>
+    	<input gpio="24" name="Golden Valley track 2"/>
+    	<input gpio="25" name="Slick Oil track 1"/>
+    	<input gpio="26" name="Slick Oil track 2"/>
+    	<input gpio="27" name="Silly Pete's"/>
+    </inputs>
+	
+	/*
+	 * List your routes
+	 */
+	
+    <routes>
+		<route input1="16" input2="18">
+			<set_turnout name="T200" position="closed"/>
+			<set_turnout name="T201" position="closed"/>
+			<set_turnout name="T202" position="closed"/>
+			<set_turnout name="T400" position="closed"/>
+			<set_turnout name="T401" position="closed"/>
+			<set_turnout name="T402" position="closed"/>
+			<set_turnout name="T403" position="closed"/>
+		</route>
+		<route input1="16" input2="20">
+			<set_turnout name="T200" position="thrown"/>
+			<set_turnout name="T201" position="closed"/>
+			<set_turnout name="T202" position="closed"/>
+			<set_turnout name="T400" position="closed"/>
+			<set_turnout name="T401" position="closed"/>
+			<set_turnout name="T402" position="closed"/>
+			<set_turnout name="T403" position="thrown"/>
+		</route>
+		<route input1="16" input2="22">
+			<set_turnout name="T200" position="closed"/>
+			<set_turnout name="T201" position="thrown"/>
+			<set_turnout name="T202" position="closed"/>
+			<set_turnout name="T400" position="closed"/>
+			<set_turnout name="T401" position="closed"/>
+			<set_turnout name="T402" position="thrown"/>
+			<set_turnout name="T403" position="closed"/>
+		</route>
+    </routes>
+    
+</layout>

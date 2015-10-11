@@ -39,6 +39,7 @@ from Adafruit_PWM_Servo_Driver import PWM
 import RPi.GPIO as GPIO
 import gawRelayHandler
 import gawServoHandler
+from xml.dom import minidom
 import time
 import re
 import logging
@@ -167,15 +168,18 @@ class layout:
 		self.relayHandler = gawRelayHandler.relayHandler()	# output relays
 		self.servoHandler = gawServoHandler.servoHandler()	# output servo's
 		
-	def setName(self, name):
-		self.name = name
-	
 	def clearLayout(self, name):
 		self.name = name
+		self.owner = ""
 		self.turnoutList = []
 		self.routeList = []
 
-
+	def setName(self, name):
+		self.name = name
+	
+	def setOwner(self, owner):
+		self.owner = owner
+	
 	def addTurnout(self, id, type, board, channel, posclos, posthro, name):
 		found = 0				# Try to find turnout
 		for t in self.turnoutList:
@@ -213,19 +217,29 @@ class layout:
 			logging.error("trying to throw unknown turnout, id=" + str(id))
 
 
-	def addRoute(self, id, input1, input2, settings):
+	def addRoute(self, id, input1, input2):
 		found = 0				# Try to find route
 		for r in self.routeList:
 			if r.id == id:
 				found = 1
 				break
 		if found == 0:			# only add once
-			self.routeList.append(route(id, \
-						input1, \
-						input2, \
-						settings ) )
+			self.routeList.append(route(id, input1, input2 ) )
 		else:
 			logging.error("trying to add duplicate route, id=" + str(id))
+
+
+	def addRouteTurnout(self, id, name, position):
+		found = 0				# Try to find route
+		for r in self.routeList:
+			if r.id == id:
+				found = 1
+				break
+		if found == 1:
+			r.setTurnoutList.append(setTurnout(name, position))
+		else:
+			logging.error("error trying to add turnout to route, id=" + str(id) + \
+							", name=" + name )
 
 
 	def setRoute(self, id):
@@ -289,12 +303,16 @@ class turnout:
 # class definition for route objects
 # ------------------------------------------------------------------------
 class route:
-	def __init__(self, id, input1, input2, settings):
+	def __init__(self, id, input1, input2):
 		self.id = id
 		self.input1 = input1
 		self.input2 = input2
-		self.settings = settings
+		self.setTurnoutList = []
 
+class setTurnout:
+	def __init__(self, name, position):
+		self.name = name
+		self.position = position
 
 
 # ------------------------------------------------------------------------
@@ -345,196 +363,118 @@ class input:
 
 
 # ------------------------------------------------------------------------
-# parse lines of type Turnout
-# ------------------------------------------------------------------------
-def parseTurnoutLine(line, tid, lc):
-							# break down Turnout line and create new turnout
-							# object in list of turnouts
-	m = re.match("[Tt].*[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)[:](.*)", line)
-	if m:
-		id = str(tid)
-
-		type = m.group(1)
-		x = re.match("(.).*", type)
-		t = x.group(1)
-		if (t == "s" or t == "S" or t == "r" or t == "R"):
-			type = type
-		else:
-			logging.error("type not specified in Turnout line " + str(lc))
-			exit(1)
-	
-		board = m.group(2)
-		if board == '':
-			board = '64'
-			logging.info("board not specified in Turnout line " + str(lc) + \
-				"- default of 64 substituted")
-	
-		chan = m.group(3)
-		if chan == '':
-			chan = '0'
-			logging.info("channel not specified in Turnout line " + str(lc) + \
-				"- default of 0 substituted")
-	
-		posclos = m.group(4)
-		if posclos == '':
-			posclos ='210'
-			logging.info("posclos not specified in Turnout line " + str(lc) + \
-				"- default of 210 substituted")
-	
-		posthro = m.group(5)
-		if posthro == '':
-			posclos ='400'
-			logging.info("posthro not specified in Turnout line " + str(lc) + \
-				"- default of 400 substituted")
-	
-		tname = m.group(6)
-		if tname == '':
-			tname = "T" + id
-			logging.info("name not specified in Turnout line " + str(lc) + \
-				"- default of:" + tname + " substituted")
-	
-		logging.debug("Adding turnout to list:" + tname)
-		myLayout.addTurnout(int(id), type, int(board), int(chan), \
-									int(posclos), int(posthro), tname)
-
-		return True
-	else:
-		logging.warning("Syntax error in Turnout line " + str(lc) + \
-				", line not processed")
-		return False
-
-
-# ------------------------------------------------------------------------
-# parse lines of type Input
-# ------------------------------------------------------------------------
-def parseInputLine(line, iid, lc):
-								# break down Input line and create new input
-								# object in list of inputs
-	m = re.match("[Ii].*[:](.*)[:](.*)", line)
-	if m:
-		id = str(iid)
-		myPins.addPin(int(iid), int(m.group(1)), m.group(2) )
-		return 1
-	else:
-		logging.warning("Syntax error in Input line " + str(lc) + \
-				", line not processed")
-		return 0
-
-
-# ------------------------------------------------------------------------
-# parse lines of type Route
-# ------------------------------------------------------------------------
-def parseRouteLine(line, rid, lc):
-								# break down Route line and create new route
-								# object in list of routes
-	m = re.match("[Rr].*[:](.*)[:](.*)[:](.*)", line)
-	if m:
-		id = str(rid)
-
-		inp1 = m.group(1)
-		if inp1 == '':
-			inp1 = '0'
-			logging.info("input1 not specified in Route line " + str(lc) + \
-				"- default of 0 substituted")
-	
-		inp2 = m.group(2)
-		if inp2 == '':
-			inp2 = '0'
-			logging.info("input2 not specified in Route line " + str(lc) + \
-				"- default of 0 substituted")
-	
-		logging.debug("Adding route to List:" + id)
-		myLayout.addRoute(int(rid), \
-					int(inp1), \
-					int(inp2), \
-					m.group(3) )
-		
-		return 1
-		
-	else:			# line type not defined
-	
-		logging.warning("Syntax error in Route line " + str(lc) + \
-				", line not processed")
-		
-		return 0
-
-
-# ------------------------------------------------------------------------
-# parse lines of type Name
-# ------------------------------------------------------------------------
-def parseNameLine(line, lc):
-							# break down Name line
-	m = re.match("[Nn].*[:](.*)", line)
-	if m:
-		myLayout.setName((m.group(1)))
-	else:
-		logging.warning("Syntax error in Name line " + str(lc) + \
-				", line not processed")
-
-
-
-# ------------------------------------------------------------------------
 # read and process the configuration file
 # ------------------------------------------------------------------------
 def read_config_file():
-	global name
 	res = True
 
 								# Initialize all input GPIOs as input and 
 								# set falling edge events for them
 	GPIO.setmode(GPIO.BCM)		# set up GPIO using BCM numbering
 
+								# read the xml configuration file
+	xmldoc = minidom.parse('rasp_routes_py.xml')
+
+								# find the description
+	dList = xmldoc.getElementsByTagName('description')
+	for d in dList:
+		myLayout.setName(d.attributes['name'].value)
+		myLayout.setOwner(d.attributes['owner'].value)
+
 	print "--------------------------------------------------------------------------------"
 	print "Welcom to " + myLayout.name
+	if myLayout.owner != "":
+		print "Owned by  " + myLayout.owner
 	print "--------------------------------------------------------------------------------"
 	print ""
 	print "Reading and checking configuration file, initializing hardware"
-
-	lc = 1						# set line count
 	
-	tid = 0						# set Turnout id count
-	iid = 0						# set Input id count
-	rid = 0						# set Route id count
-
-	with open("rasp_routes_py.ini", "r") as myfile:
-
-		for line in myfile:		# read next line
+								# process range lines
+	irList = xmldoc.getElementsByTagName('input_range')
+	for ir in irList:
+		gpio_min=int(ir.attributes['gpio_min'].value)
+		gpio_max=int(ir.attributes['gpio_max'].value)
+		logging.debug("Range for gpio-numbers, min=" + str(gpio_min) + ", max=" + str(gpio_max))
 	
-			line = line.rstrip()	# strip all spaces from right side
-
-			if (len(line) > 0):	# empty line?
-
-								# get first character to determine line type
-				m = re.match("(.).*", line)
-				if m: type = (m.group(1))	# Isolate type of line
+	rtrList = xmldoc.getElementsByTagName('relay_turnout_range')
+	for rtr in rtrList:
+		r_adr_min=int(rtr.attributes['adr_min'].value)
+		r_adr_max=int(rtr.attributes['adr_max'].value)
+		r_pos_min=int(rtr.attributes['pos_min'].value)
+		r_pos_max=int(rtr.attributes['pos_max'].value)
+		logging.debug("Ranges for relay-turnouts" + \
+				", min_adr=" + str(r_adr_min) + ", max_adr=" + str(r_adr_max) + \
+				", min_pos=" + str(r_pos_min) + ", max_pos=" + str(r_pos_max) )
 	
-								# Is this a 'turnout' line?
-				if (type == "T" or type == "t"):
-					if (parseTurnoutLine(line, tid, lc)): tid += 1
+	strList = xmldoc.getElementsByTagName('servo_turnout_range')
+	for strg in strList:
+		s_adr_min=int(strg.attributes['adr_min'].value)
+		s_adr_max=int(strg.attributes['adr_max'].value)
+		s_pos_min=int(strg.attributes['pos_min'].value)
+		s_pos_max=int(strg.attributes['pos_max'].value)
+		logging.debug("Ranges for servo-turnouts" + \
+				", min_adr=" + str(s_adr_min) + ", max_adr=" + str(s_adr_max) + \
+				", min_pos=" + str(s_pos_min) + ", max_pos=" + str(s_pos_max) )
+	
+	
+								# process input lines
+	iList = xmldoc.getElementsByTagName('input')
+	iid = 0
+	print "This layout has", len(iList), "inputs"
+	for i in iList:
+		gpio=int(i.attributes['gpio'].value)
+		name=i.attributes['name'].value
+		if gpio_min <= gpio <= gpio_max:
+			logging.debug("Adding input to list: " + name)
+			myPins.addPin(iid, gpio, name)
+			iid += 1
+		else:
+			logging.error("gpio out of range for input '" + name + "', NOT ADDED")
+	
+	
+								# process turnout lines
+	tList = xmldoc.getElementsByTagName('turnout')
+	tid = 0
+	print "This layout has", len(tList), "turnouts"
+	for t in tList:
+		type=t.attributes['type'].value
+		boardAddress=int(t.attributes['boardAddress'].value)
+		channel=int(t.attributes['channel'].value)
+		posclos=int(t.attributes['posclos'].value)
+		posthro=int(t.attributes['posthro'].value)
+		name=t.attributes['name'].value
+		logging.debug("Adding turnout to list: " + name)
+		myLayout.addTurnout(tid, type, boardAddress, channel, \
+									posclos, posthro, name)
+		tid += 1
+	
+	
+								# process route lines
+	rList = xmldoc.getElementsByTagName('route')
+	rid = 0
+	print "This layout has", len(rList), "routes"
+	for r in rList:
+		input1=int(r.attributes['input1'].value)
+		input2=int(r.attributes['input2'].value)
+		logging.debug("Adding route to List: " + str(rid))
+		myLayout.addRoute(rid, input1, input2)
+		
+								# process route turnouts to be set
+		sList = r.getElementsByTagName('set_turnout') 
+		for s in sList:
+			name = s.attributes['name'].value
+			position = s.attributes['position'].value
+			logging.debug("Adding turnout to route: " + str(rid) + " " + name + " " + position)
+			myLayout.addRouteTurnout(rid, name, position)
 
-								# Is this an 'input' line?
-				elif (type == "I" or type == "i"):
-					if (parseInputLine(line, iid, lc)): iid += 1
-
-								# Is this a 'route' line?
-				elif (type == "R" or type == "r"):
-					if (parseRouteLine(line, rid, lc)): rid += 1
-
-								# Is this a 'name' line?
-				elif (type == "N" or type == "n"):
-					parseNameLine(line, lc)
-
-								# Is this NOT a comment line?
-				elif (type != "#"):
-					logging.warning("Invalid line type in line" + str(lc))
-
-								# increment line count
-			lc = lc+1
-
+		rid += 1
+	
 	checkConfigLists()			# check for errors after building lists
-
+	
 	print "--------------------------------------------------------------------------------"
 	print "Welcome to " + myLayout.name
+	if myLayout.owner != "":
+		print "Owned by  " + myLayout.owner
 	print "--------------------------------------------------------------------------------"
 
 	return res
@@ -684,6 +624,9 @@ myPins = inputPins()							# input
 # ------------------------------------------------------------------------
 
 if (read_config_file()):
+	
+	myPins.cleanup()
+	exit(0)
 	
 	while True:
 		reply = raw_input("> ") 
