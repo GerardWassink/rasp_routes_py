@@ -10,7 +10,8 @@ At this moment (september 19, 2015) I consider it working.
 When the program is running, it presents the user with a prompt: "**`> `**" to indicate it expects a command. type **`h`** or **`help`** to see which command are available.
 
 ## License / availability
-This software is available under the conditions of the GNU General Public License. See the [LICENSE file](./LICENCSE) for further details.
+This software is available under the conditions of the GNU General Public License. 
+See the [License file](./LICENSE) for further details.
 
 ## Use at own risk
 Usage of this program is at the user's own risk, author will not be held responsible for any damage to your hardware. Especially the positioning of servo's has to be done with the greatest possible care.
