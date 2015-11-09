@@ -57,6 +57,9 @@ All input GPIO's will be inilialized as **`pull_up_down=GPIO.PUD_UP`**, meaning 
 
 **`type`** - the type of turnout control, possible values:
 
+* ***`servo`*** the turnout is driven by an Adafruit servo HAT
+* ***`relay`*** the turnout is driven by my [relay board](https://github.com/GerardWassink/gaw_Rasp_I2C_16_Relays)
+
 **`boardAddress`** - identification of the board the servo or relay is connected to. These numbers are specified in the documentation as hexadecimal numbers (i.e. 0x20 or 0x40). For ease of parsing this program expects decimal numbers, so 0x40 will be specified as 64 here.
 
 **`channel`** - the slot number for the servo or relay (range 0-15) on the board given in the same line.
