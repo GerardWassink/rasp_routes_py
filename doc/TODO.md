@@ -1,14 +1,20 @@
 # TODO list (rasp_routes_py program)
 There are a number of things still to be done before this program is ready to be used:
 
-### GPIO outputs
-* be able to specify gpio outputs next to servo outputs
-
 ### non standard config file
 * be able to read another config file from command line
 
 
 # DONE list
+
+### XML config file (DONE 2015-09-26)
+* build ini file to xml file
+	* added code to handle new configuration file (import xml.dom import minidom)
+
+### GPIO outputs (DONE 2015-09-26)
+* be able to specify gpio outputs next to servo outputs
+	* developed [I2C relay board](https://github.com/GerardWassink/gaw_Rasp_I2C_16_Relays)
+	* built in code to make use of these boards
 
 ### improved input event handling (DONE 2015-09-19)
 * input event handling
