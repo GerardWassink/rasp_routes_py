@@ -402,6 +402,7 @@ def read_config_file():
 	print "--------------------------------------------------------------------------------"
 	print ""
 	print "Reading and checking configuration file, initializing hardware"
+	print ""
 	
 								#
 								# process input range lines
@@ -590,6 +591,7 @@ def report_turnouts():
 # Give help onscreen
 # ------------------------------------------------------------------------
 def explain():
+	print ""
 	print "rasp_routes_py - valid line commands are:"
 	print ""
 	print "h | help     : gives you this help information"
@@ -598,7 +600,6 @@ def explain():
 	print "lt           : list turnouts"
 	print "li           : list inputs"
 	print "lr           : list routes"
-	print "s | state    : report about current status of events"
 	print "q | quit     : stops this program"
 	print ""
 	
@@ -640,6 +641,8 @@ myPins = inputPins()							# input
 # ------------------------------------------------------------------------
 
 if (read_config_file()):
+	
+	explain()
 	
 	while True:
 		reply = raw_input("> ") 
