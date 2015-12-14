@@ -14,7 +14,7 @@ Now you have installed the git software. you can now interact with [Github](http
 
 **`git clone http://github.com/GerardWassink/rasp_routes_py`**
 
-In your home directory, you now have a sub-directory with the name **`~/rasp_routes_py/`**. In that directory you will find Adafruit libraries and a library by me, **`gawServoHandler`**. Those libraries are needed to run the programs. The programs are:
+In your home directory, you now have a sub-directory with the name **`~/rasp_routes_py/`**. In that directory you will find Adafruit libraries and two libraries by me, **`gawServoHandler`** and **`gawRelayHandler`**. Those libraries are needed to run the programs. The programs are:
 
 * **`rasp_routes_py.py`** (see [the help file](../README.md))
 * **`gawServoCalibrate.py`** (see [the help file](./gawServoCalibrate.md))
